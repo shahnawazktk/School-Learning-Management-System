@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +21,7 @@
             --dark-color: #1e293b;
             --gray-color: #64748b;
             --sidebar-width: 280px;
+            --sidebar-collapsed-width: 70px;
             --header-height: 70px;
             --border-radius: 10px;
             --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -40,7 +42,7 @@
             overflow-x: hidden;
         }
 
-        /* Login Page Styles */
+        /* ========== LOGIN PAGE ========== */
         .login-container {
             display: flex;
             min-height: 100vh;
@@ -143,21 +145,27 @@
             font-size: 0.9rem;
         }
 
-        /* Student Dashboard Styles */
-        .student-dashboard {
-            display: none;
+        /* ========== LAYOUT CONTAINER ========== */
+        .layout-container {
+            display: flex;
+            min-height: 100vh;
+            width: 100vw;
+            position: relative;
         }
 
-        /* Sidebar Styles */
+        /* ========== SIDEBAR FIXED STRUCTURE ========== */
         .sidebar {
             width: var(--sidebar-width);
             background-color: white;
             box-shadow: var(--box-shadow);
             position: fixed;
             height: 100vh;
+            top: 0;
+            left: 0;
             transition: var(--transition);
-            z-index: 100;
+            z-index: 1000;
             overflow-y: auto;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
         }
@@ -169,12 +177,16 @@
             align-items: center;
             gap: 12px;
             height: var(--header-height);
+            min-height: var(--header-height);
+            flex-shrink: 0;
         }
 
         .sidebar-header h2 {
             color: var(--primary-color);
             font-weight: 700;
             white-space: nowrap;
+            font-size: 1.4rem;
+            transition: var(--transition);
         }
 
         .student-profile-sidebar {
@@ -183,6 +195,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            flex-shrink: 0;
         }
 
         .student-avatar {
@@ -202,6 +215,9 @@
         .student-info-sidebar h3 {
             font-size: 1.1rem;
             margin-bottom: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .student-info-sidebar p {
@@ -210,23 +226,44 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .sidebar-menu {
             padding: 1rem 0;
-            flex-grow: 1;
+            flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-menu::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-menu::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
         }
 
         .menu-item {
             display: flex;
             align-items: center;
-            padding: 0.9rem 1.5rem;
+            padding: 0.85rem 1.5rem;
             color: var(--gray-color);
             text-decoration: none;
             transition: var(--transition);
             gap: 12px;
             border-left: 4px solid transparent;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .menu-item:hover {
@@ -238,22 +275,26 @@
             background-color: #eff6ff;
             color: var(--primary-color);
             border-left-color: var(--primary-color);
+            font-weight: 600;
         }
 
-        .menu-item i {
+        .menu-icon {
             width: 24px;
             text-align: center;
             font-size: 1.1rem;
+            flex-shrink: 0;
         }
 
         .menu-text {
             font-weight: 500;
             white-space: nowrap;
+            transition: var(--transition);
         }
 
         .sidebar-footer {
             padding: 1rem;
             border-top: 1px solid #e2e8f0;
+            flex-shrink: 0;
         }
 
         .logout-btn {
@@ -270,22 +311,71 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            white-space: nowrap;
         }
 
         .logout-btn:hover {
             background-color: #fee2e2;
         }
 
-        /* Main Content Styles */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        /* Collapsed Sidebar */
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar.collapsed .menu-text,
+        .sidebar.collapsed .sidebar-header h2,
+        .sidebar.collapsed .student-info-sidebar {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .sidebar.collapsed .student-profile-sidebar {
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        /* Sidebar Overlay for Mobile */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
             transition: var(--transition);
         }
 
-        /* Header Styles */
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ========== MAIN CONTENT FIXED STRUCTURE ========== */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            transition: var(--transition);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            width: calc(100vw - var(--sidebar-width));
+            max-width: 100vw;
+            overflow: hidden;
+        }
+
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed-width);
+            width: calc(100vw - var(--sidebar-collapsed-width));
+        }
+
+        /* ========== HEADER FIXED STRUCTURE ========== */
         .header {
             height: var(--header-height);
             background-color: white;
@@ -296,8 +386,9 @@
             padding: 0 2rem;
             position: sticky;
             top: 0;
-            z-index: 50;
+            z-index: 900;
             flex-shrink: 0;
+            width: 100%;
         }
 
         .header-left {
@@ -314,13 +405,15 @@
             cursor: pointer;
             padding: 0.5rem;
             border-radius: 5px;
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
+            transition: var(--transition);
         }
 
         .toggle-sidebar:hover {
             background-color: #f1f5f9;
+            color: var(--primary-color);
         }
 
         .page-title h1 {
@@ -329,6 +422,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            white-space: nowrap;
         }
 
         .header-right {
@@ -337,8 +431,11 @@
             gap: 1.5rem;
         }
 
-        .notification-btn {
+        .notification-wrapper {
             position: relative;
+        }
+
+        .notification-btn {
             background: none;
             border: none;
             font-size: 1.2rem;
@@ -349,10 +446,12 @@
             justify-content: center;
             padding: 0.5rem;
             border-radius: 5px;
+            transition: var(--transition);
         }
 
         .notification-btn:hover {
             background-color: #f1f5f9;
+            color: var(--primary-color);
         }
 
         .notification-badge {
@@ -368,6 +467,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: bold;
         }
 
         .student-profile-header {
@@ -379,6 +479,7 @@
             background-color: #f8fafc;
             cursor: pointer;
             transition: var(--transition);
+            white-space: nowrap;
         }
 
         .student-profile-header:hover {
@@ -396,6 +497,7 @@
             justify-content: center;
             font-weight: bold;
             font-size: 0.9rem;
+            flex-shrink: 0;
         }
 
         .student-info-header h4 {
@@ -408,14 +510,36 @@
             color: var(--gray-color);
         }
 
-        /* Content Area */
+        /* ========== CONTENT AREA FIXED STRUCTURE ========== */
         .content {
             padding: 2rem;
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
+            width: 100%;
+            max-height: calc(100vh - var(--header-height));
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
         }
 
-        /* Dashboard Welcome Banner */
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* ========== DASHBOARD CONTENT ========== */
+        .student-dashboard {
+            display: none;
+        }
+
         .welcome-banner {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
@@ -428,11 +552,13 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 1rem;
+            width: 100%;
         }
 
         .welcome-banner-content h2 {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
+            white-space: nowrap;
         }
 
         .welcome-banner-content p {
@@ -452,6 +578,7 @@
             padding: 0.8rem 1.2rem;
             border-radius: 8px;
             backdrop-filter: blur(10px);
+            flex-shrink: 0;
         }
 
         .quick-stat-value {
@@ -471,6 +598,7 @@
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
+            width: 100%;
         }
 
         .dashboard-card {
@@ -501,6 +629,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            white-space: nowrap;
         }
 
         .card-icon {
@@ -513,6 +642,7 @@
             align-items: center;
             justify-content: center;
             font-size: 1.3rem;
+            flex-shrink: 0;
         }
 
         .card-content {
@@ -528,9 +658,10 @@
         .card-actions {
             display: flex;
             gap: 0.8rem;
+            flex-wrap: wrap;
         }
 
-        /* Button Styles */
+        /* ========== BUTTONS ========== */
         .btn {
             padding: 0.6rem 1.2rem;
             border-radius: 6px;
@@ -544,6 +675,7 @@
             justify-content: center;
             gap: 0.5rem;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .btn-primary {
@@ -577,7 +709,7 @@
             transform: translateY(-2px);
         }
 
-        /* Subjects Page Styles */
+        /* ========== SUBJECTS PAGE ========== */
         .page-header {
             display: flex;
             align-items: center;
@@ -585,6 +717,7 @@
             margin-bottom: 2rem;
             flex-wrap: wrap;
             gap: 1rem;
+            width: 100%;
         }
 
         .page-header h1 {
@@ -593,12 +726,14 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            white-space: nowrap;
         }
 
         .filter-options {
             display: flex;
             gap: 1rem;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .filter-select {
@@ -608,6 +743,7 @@
             background-color: white;
             color: var(--dark-color);
             font-size: 0.9rem;
+            min-width: 150px;
         }
 
         .subjects-grid {
@@ -615,6 +751,7 @@
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
+            width: 100%;
         }
 
         .subject-card {
@@ -626,7 +763,7 @@
             border: 1px solid transparent;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            min-height: 280px;
         }
 
         .subject-card:hover {
@@ -658,12 +795,16 @@
 
         .subject-title {
             flex: 1;
+            min-width: 0;
         }
 
         .subject-title h3 {
             font-size: 1.2rem;
             margin-bottom: 0.3rem;
             color: var(--dark-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .subject-title p {
@@ -695,6 +836,7 @@
             justify-content: center;
             font-size: 0.8rem;
             font-weight: bold;
+            flex-shrink: 0;
         }
 
         .subject-resources {
@@ -717,23 +859,27 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0;
         }
 
         .resource-icon {
             color: var(--primary-color);
             font-size: 1.1rem;
+            flex-shrink: 0;
         }
 
         .resource-actions {
             display: flex;
             gap: 0.5rem;
+            flex-shrink: 0;
         }
 
-        /* Assignments Page Styles */
+        /* ========== ASSIGNMENTS PAGE ========== */
         .assignments-list {
             display: grid;
             gap: 1rem;
             margin-bottom: 2rem;
+            width: 100%;
         }
 
         .assignment-card {
@@ -743,6 +889,7 @@
             box-shadow: var(--box-shadow);
             transition: var(--transition);
             border-left: 4px solid transparent;
+            width: 100%;
         }
 
         .assignment-card:hover {
@@ -786,6 +933,7 @@
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
+            white-space: nowrap;
         }
 
         .status-pending {
@@ -827,6 +975,7 @@
         .detail-value {
             font-weight: 600;
             color: var(--dark-color);
+            word-break: break-word;
         }
 
         .assignment-actions {
@@ -835,12 +984,13 @@
             flex-wrap: wrap;
         }
 
-        /* Attendance & Results Page Styles */
+        /* ========== ATTENDANCE & RESULTS PAGE ========== */
         .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
+            width: 100%;
         }
 
         .stat-card {
@@ -890,6 +1040,7 @@
             padding: 1.5rem;
             box-shadow: var(--box-shadow);
             margin-bottom: 2rem;
+            width: 100%;
         }
 
         .chart-card h3 {
@@ -911,6 +1062,7 @@
             box-shadow: var(--box-shadow);
             overflow: hidden;
             margin-bottom: 2rem;
+            width: 100%;
         }
 
         .table-header {
@@ -919,6 +1071,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .table-header h3 {
@@ -929,11 +1083,13 @@
 
         .table-responsive {
             overflow-x: auto;
+            width: 100%;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 600px;
         }
 
         thead {
@@ -979,7 +1135,7 @@
             font-weight: 700;
         }
 
-        /* Modal Styles */
+        /* ========== MODAL STYLES ========== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -1042,10 +1198,12 @@
             cursor: pointer;
             padding: 0.2rem;
             border-radius: 4px;
+            transition: var(--transition);
         }
 
         .modal-close:hover {
             background-color: #f1f5f9;
+            color: var(--danger-color);
         }
 
         .modal-body {
@@ -1062,6 +1220,7 @@
             margin-bottom: 1.5rem;
             transition: var(--transition);
             cursor: pointer;
+            width: 100%;
         }
 
         .file-upload-area:hover {
@@ -1098,17 +1257,20 @@
             border-radius: 8px;
             margin-top: 1rem;
             border: 1px solid var(--accent-color);
+            width: 100%;
         }
 
         .file-info {
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0;
         }
 
         .file-icon {
             color: var(--primary-color);
             font-size: 1.5rem;
+            flex-shrink: 0;
         }
 
         .remove-file {
@@ -1118,31 +1280,51 @@
             cursor: pointer;
             font-size: 1.2rem;
             padding: 0.2rem;
+            flex-shrink: 0;
         }
 
-        /* Responsive Design */
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 1200px) {
+
+            .subjects-grid,
+            .dashboard-cards,
+            .stats-container {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+
         @media (max-width: 1024px) {
             .sidebar {
                 transform: translateX(-100%);
             }
-            
+
             .sidebar.active {
                 transform: translateX(0);
             }
-            
+
+            .sidebar.collapsed {
+                width: var(--sidebar-width);
+            }
+
             .main-content {
                 margin-left: 0;
+                width: 100vw;
             }
-            
+
+            .main-content.expanded {
+                margin-left: 0;
+                width: 100vw;
+            }
+
             .toggle-sidebar {
                 display: flex;
             }
-            
+
             .welcome-banner {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .quick-stats {
                 width: 100%;
                 justify-content: space-between;
@@ -1153,32 +1335,38 @@
             .header {
                 padding: 0 1rem;
             }
-            
+
             .content {
-                padding: 1rem;
+                padding: 1.5rem;
+                max-height: calc(100vh - var(--header-height) - 20px);
             }
-            
+
             .dashboard-cards,
             .subjects-grid,
             .stats-container {
                 grid-template-columns: 1fr;
+                gap: 1rem;
             }
-            
+
+            .header-right {
+                gap: 1rem;
+            }
+
             .assignment-header,
             .page-header {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .filter-options {
                 width: 100%;
                 flex-wrap: wrap;
             }
-            
+
             .assignment-details {
                 grid-template-columns: 1fr;
             }
-            
+
             .modal {
                 max-height: 95vh;
             }
@@ -1188,64 +1376,150 @@
             .welcome-banner h2 {
                 font-size: 1.3rem;
             }
-            
+
             .quick-stats {
                 flex-direction: column;
                 gap: 1rem;
+                width: 100%;
             }
-            
+
             .quick-stat-item {
                 width: 100%;
             }
-            
+
             .assignment-actions {
                 flex-direction: column;
             }
-            
+
             .assignment-actions .btn {
                 width: 100%;
             }
-            
+
             .card-actions {
                 flex-direction: column;
             }
-            
+
             .student-info-header {
                 display: none;
             }
-            
+
             .login-box {
                 max-width: 100%;
             }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .stat-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-right {
+                gap: 0.5rem;
+            }
         }
 
-        /* Utility Classes */
-        .mb-1 { margin-bottom: 0.5rem; }
-        .mb-2 { margin-bottom: 1rem; }
-        .mb-3 { margin-bottom: 1.5rem; }
-        .mt-1 { margin-top: 0.5rem; }
-        .mt-2 { margin-top: 1rem; }
-        .mt-3 { margin-top: 1.5rem; }
-        .text-center { text-align: center; }
-        .text-success { color: var(--success-color); }
-        .text-warning { color: var(--warning-color); }
-        .text-danger { color: var(--danger-color); }
+        /* ========== UTILITY CLASSES ========== */
+        .mb-1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mt-1 {
+            margin-top: 0.5rem;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .mt-3 {
+            margin-top: 1.5rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-success {
+            color: var(--success-color);
+        }
+
+        .text-warning {
+            color: var(--warning-color);
+        }
+
+        .text-danger {
+            color: var(--danger-color);
+        }
+
         .badge {
             padding: 0.3rem 0.6rem;
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
+            white-space: nowrap;
         }
+
         .badge-primary {
             background-color: #dbeafe;
             color: var(--primary-color);
         }
+
         .badge-success {
             background-color: #d1fae5;
             color: var(--success-color);
         }
+
+        .badge-danger {
+            background-color: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .badge-warning {
+            background-color: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
     </style>
 </head>
+
 <body>
     <!-- Login Page -->
     <div class="login-container" id="loginPage">
@@ -1257,11 +1531,13 @@
             <div class="login-body">
                 <div class="form-group">
                     <label for="studentId">Student ID</label>
-                    <input type="text" id="studentId" class="form-control" placeholder="Enter your student ID" value="STU2023001">
+                    <input type="text" id="studentId" class="form-control" placeholder="Enter your student ID"
+                        value="STU2023001">
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="Enter your password" value="password123">
+                    <input type="password" id="password" class="form-control" placeholder="Enter your password"
+                        value="password123">
                 </div>
                 <button class="login-btn" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i> Login to Dashboard
@@ -1275,549 +1551,560 @@
 
     <!-- Student Dashboard (Initially Hidden) -->
     <div class="student-dashboard" id="studentDashboard">
-        <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-graduation-cap" style="color: var(--primary-color); font-size: 1.8rem;"></i>
-                <h2>Student Portal</h2>
-            </div>
-            
-            <div class="student-profile-sidebar">
-                <div class="student-avatar">JS</div>
-                <div class="student-info-sidebar">
-                    <h3>John Smith</h3>
-                    <p><i class="fas fa-user-graduate"></i> Class 10 - Section A</p>
-                    <p><i class="fas fa-id-card"></i> STU2023001</p>
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <div class="layout-container">
+            <!-- Sidebar -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <i class="fas fa-graduation-cap" style="color: var(--primary-color); font-size: 1.8rem;"></i>
+                    <h2>Student Portal</h2>
                 </div>
-            </div>
-            
-            <div class="sidebar-menu">
-                <a href="#" class="menu-item active" data-page="dashboard">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span class="menu-text">Dashboard</span>
-                </a>
-                <a href="#" class="menu-item" data-page="subjects">
-                    <i class="fas fa-book-open"></i>
-                    <span class="menu-text">My Subjects</span>
-                </a>
-                <a href="#" class="menu-item" data-page="studyMaterials">
-                    <i class="fas fa-video"></i>
-                    <span class="menu-text">Study Materials</span>
-                </a>
-                <a href="#" class="menu-item" data-page="assignments">
-                    <i class="fas fa-tasks"></i>
-                    <span class="menu-text">Assignments</span>
-                </a>
-                <a href="#" class="menu-item" data-page="attendance">
-                    <i class="fas fa-calendar-check"></i>
-                    <span class="menu-text">Attendance</span>
-                </a>
-                <a href="#" class="menu-item" data-page="results">
-                    <i class="fas fa-chart-line"></i>
-                    <span class="menu-text">Results</span>
-                </a>
-                <a href="#" class="menu-item" data-page="profile">
-                    <i class="fas fa-user"></i>
-                    <span class="menu-text">My Profile</span>
-                </a>
-            </div>
-            
-            <div class="sidebar-footer">
-                <form method="POST" action="{{ route('logout') }}" id="logout-form">
-    @csrf
-</form>
 
-<a href="#" class="dropdown-item logout-item" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-    <i class="fas fa-sign-out-alt"></i>
-    <span>{{ __('Log Out') }}</span>
-</a>
-            </div>
-        </div>
+                <div class="student-profile-sidebar">
+                    <div class="student-avatar">JS</div>
+                    <div class="student-info-sidebar">
+                        <h3>John Smith</h3>
+                        <p><i class="fas fa-user-graduate"></i> Class 10 - Section A</p>
+                        <p><i class="fas fa-id-card"></i> STU2023001</p>
+                    </div>
+                </div>
 
-        <!-- Main Content -->
-        <div class="main-content" id="mainContent">
-            <!-- Header -->
-            <div class="header">
-                <div class="header-left">
-                    <button class="toggle-sidebar" id="toggleSidebar">
-                        <i class="fas fa-bars"></i>
+                <div class="sidebar-menu">
+                    <a href="#" class="menu-item active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt menu-icon"></i>
+                        <span class="menu-text">Dashboard</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="subjects">
+                        <i class="fas fa-book-open menu-icon"></i>
+                        <span class="menu-text">My Subjects</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="studyMaterials">
+                        <i class="fas fa-video menu-icon"></i>
+                        <span class="menu-text">Study Materials</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="assignments">
+                        <i class="fas fa-tasks menu-icon"></i>
+                        <span class="menu-text">Assignments</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="attendance">
+                        <i class="fas fa-calendar-check menu-icon"></i>
+                        <span class="menu-text">Attendance</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="results">
+                        <i class="fas fa-chart-line menu-icon"></i>
+                        <span class="menu-text">Results</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="profile">
+                        <i class="fas fa-user menu-icon"></i>
+                        <span class="menu-text">My Profile</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-footer">
+                    <form method="POST" action="{{ route('logout') }}" id="logout-form">
+                        @csrf
+                    </form>
+                    <button class="logout-btn"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Log Out</span>
                     </button>
-                    <div class="page-title">
-                        <h1 id="pageTitle"><i class="fas fa-tachometer-alt"></i> Student Dashboard</h1>
-                    </div>
-                </div>
-                
-                <div class="header-right">
-                    <button class="notification-btn" id="notificationBtn">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge">5</span>
-                    </button>
-                    
-                    <div class="student-profile-header">
-                        <div class="student-avatar-small">JS</div>
-                        <div class="student-info-header">
-                            <h4>John Smith</h4>
-                            <p>Class 10 - A</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- Content Area (Dynamic based on page) -->
-            <div class="content" id="contentArea">
-                <!-- Dashboard Content (Default) -->
-                <div id="dashboardPage" class="page-content">
-                    <div class="welcome-banner">
-                        <div class="welcome-banner-content">
-                            <h2>Welcome back, John!</h2>
-                            <p>You have 3 pending assignments, 2 new study materials, and your attendance is 94% this month.</p>
-                        </div>
-                        <div class="quick-stats">
-                            <div class="quick-stat-item">
-                                <div class="quick-stat-value">94%</div>
-                                <div class="quick-stat-label">Attendance</div>
-                            </div>
-                            <div class="quick-stat-item">
-                                <div class="quick-stat-value">A-</div>
-                                <div class="quick-stat-label">Avg. Grade</div>
-                            </div>
-                            <div class="quick-stat-item">
-                                <div class="quick-stat-value">6</div>
-                                <div class="quick-stat-label">Subjects</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-cards">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-book-open"></i> My Subjects
-                                </div>
-                                <div class="card-icon">
-                                    <i class="fas fa-book"></i>
-                                </div>
-                            </div>
-                            <div class="card-content">
-                                <p>You are currently enrolled in 6 subjects. View your subjects, teachers, and access study materials.</p>
-                            </div>
-                            <div class="card-actions">
-                                <button class="btn btn-primary" data-page="subjects">
-                                    <i class="fas fa-eye"></i> View Subjects
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-tasks"></i> Pending Assignments
-                                </div>
-                                <div class="card-icon">
-                                    <i class="fas fa-clipboard-list"></i>
-                                </div>
-                            </div>
-                            <div class="card-content">
-                                <p>You have 3 assignments pending submission. Check deadlines and submit your work.</p>
-                                <div class="mt-2">
-                                    <span class="badge badge-danger">2 overdue</span>
-                                    <span class="badge badge-warning">1 pending</span>
-                                </div>
-                            </div>
-                            <div class="card-actions">
-                                <button class="btn btn-primary" data-page="assignments">
-                                    <i class="fas fa-external-link-alt"></i> Go to Assignments
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-chart-line"></i> Performance
-                                </div>
-                                <div class="card-icon">
-                                    <i class="fas fa-chart-bar"></i>
-                                </div>
-                            </div>
-                            <div class="card-content">
-                                <p>View your attendance records, exam results, and performance analytics.</p>
-                                <div class="mt-2">
-                                    <span class="badge badge-success">94% attendance</span>
-                                    <span class="badge badge-primary">A- average</span>
-                                </div>
-                            </div>
-                            <div class="card-actions">
-                                <button class="btn btn-primary" data-page="attendance">
-                                    <i class="fas fa-chart-pie"></i> View Reports
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="chart-card">
-                        <h3>Monthly Attendance Trend</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="attendanceChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Subjects Page (Hidden by default) -->
-                <div id="subjectsPage" class="page-content" style="display: none;">
-                    <div class="page-header">
-                        <h1><i class="fas fa-book-open"></i> My Subjects</h1>
-                        <div class="filter-options">
-                            <select class="filter-select" id="subjectFilter">
-                                <option value="all">All Subjects</option>
-                                <option value="science">Science</option>
-                                <option value="math">Mathematics</option>
-                                <option value="language">Languages</option>
-                                <option value="arts">Arts & Humanities</option>
-                            </select>
-                            <button class="btn btn-outline">
-                                <i class="fas fa-download"></i> Export List
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="subjects-grid" id="subjectsContainer">
-                        <!-- Subjects will be loaded here dynamically -->
-                    </div>
-                </div>
-
-                <!-- Study Materials Page (Hidden by default) -->
-                <div id="studyMaterialsPage" class="page-content" style="display: none;">
-                    <div class="page-header">
-                        <h1><i class="fas fa-video"></i> Study Materials</h1>
-                        <div class="filter-options">
-                            <select class="filter-select" id="materialFilter">
-                                <option value="all">All Materials</option>
-                                <option value="video">Videos</option>
-                                <option value="notes">Notes</option>
-                                <option value="presentation">Presentations</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="subjects-grid" id="materialsContainer">
-                        <!-- Study materials will be loaded here dynamically -->
-                    </div>
-                </div>
-
-                <!-- Assignments Page (Hidden by default) -->
-                <div id="assignmentsPage" class="page-content" style="display: none;">
-                    <div class="page-header">
-                        <h1><i class="fas fa-tasks"></i> My Assignments</h1>
-                        <div class="filter-options">
-                            <select class="filter-select" id="assignmentFilter">
-                                <option value="all">All Assignments</option>
-                                <option value="pending">Pending</option>
-                                <option value="submitted">Submitted</option>
-                                <option value="overdue">Overdue</option>
-                            </select>
-                            <button class="btn btn-primary" id="viewAssignmentCalendarBtn">
-                                <i class="fas fa-calendar"></i> Calendar View
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="assignments-list" id="assignmentsContainer">
-                        <!-- Assignments will be loaded here dynamically -->
-                    </div>
-                </div>
-
-                <!-- Attendance Page (Hidden by default) -->
-                <div id="attendancePage" class="page-content" style="display: none;">
-                    <div class="page-header">
-                        <h1><i class="fas fa-calendar-check"></i> Attendance</h1>
-                        <div class="filter-options">
-                            <select class="filter-select" id="attendancePeriod">
-                                <option value="monthly">This Month</option>
-                                <option value="semester">This Semester</option>
-                                <option value="yearly">This Year</option>
-                            </select>
-                            <button class="btn btn-outline">
-                                <i class="fas fa-print"></i> Print Report
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="stats-container">
-                        <div class="stat-card attendance-stat">
-                            <div class="stat-icon">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3>94%</h3>
-                                <p>Overall Attendance</p>
-                                <p class="text-success"><i class="fas fa-arrow-up"></i> 2% from last month</p>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                                <i class="fas fa-user-clock"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3>4</h3>
-                                <p>Days Present This Month</p>
-                                <p>Out of 4 school days</p>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                                <i class="fas fa-user-times"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3>0</h3>
-                                <p>Days Absent This Month</p>
-                                <p>Perfect attendance!</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="chart-card">
-                        <h3>Attendance by Subject</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="attendanceBySubjectChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h3>Monthly Attendance Record</h3>
-                            <span>April 2024</span>
-                        </div>
-                        <div class="table-responsive">
-                            <table id="attendanceTable">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Day</th>
-                                        <th>Status</th>
-                                        <th>Subject 1</th>
-                                        <th>Subject 2</th>
-                                        <th>Subject 3</th>
-                                        <th>Remarks</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="attendanceTableBody">
-                                    <!-- Attendance data will be loaded here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Results Page (Hidden by default) -->
-                <div id="resultsPage" class="page-content" style="display: none;">
-                    <div class="page-header">
-                        <h1><i class="fas fa-chart-line"></i> Results & Grades</h1>
-                        <div class="filter-options">
-                            <select class="filter-select" id="resultsTerm">
-                                <option value="term1">Term 1</option>
-                                <option value="term2" selected>Term 2</option>
-                                <option value="term3">Term 3</option>
-                                <option value="final">Final Exam</option>
-                            </select>
-                            <button class="btn btn-outline">
-                                <i class="fas fa-download"></i> Download Report
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="stats-container">
-                        <div class="stat-card result-stat">
-                            <div class="stat-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3>A-</h3>
-                                <p>Overall Grade</p>
-                                <p class="text-success"><i class="fas fa-arrow-up"></i> Improved from B+</p>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
-                                <i class="fas fa-percentage"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3>86%</h3>
-                                <p>Average Percentage</p>
-                                <p>Class Rank: 12/45</p>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
-                                <i class="fas fa-medal"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3>3</h3>
-                                <p>Subjects with A Grade</p>
-                                <p>Mathematics, Science, English</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="chart-card">
-                        <h3>Subject-wise Performance</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="resultsChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h3>Term 2 Examination Results</h3>
-                            <span>Published: April 15, 2024</span>
-                        </div>
-                        <div class="table-responsive">
-                            <table id="resultsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Subject</th>
-                                        <th>Teacher</th>
-                                        <th>Marks Obtained</th>
-                                        <th>Total Marks</th>
-                                        <th>Percentage</th>
-                                        <th>Grade</th>
-                                        <th>Remarks</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="resultsTableBody">
-                                    <!-- Results data will be loaded here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Profile Page (Hidden by default) -->
-                <div id="profilePage" class="page-content" style="display: none;">
-                    <div class="page-header">
-                        <h1><i class="fas fa-user"></i> My Profile</h1>
-                        <button class="btn btn-outline" id="editProfileBtn">
-                            <i class="fas fa-edit"></i> Edit Profile
+            <!-- Main Content -->
+            <div class="main-content" id="mainContent">
+                <!-- Header -->
+                <div class="header">
+                    <div class="header-left">
+                        <button class="toggle-sidebar" id="toggleSidebar">
+                            <i class="fas fa-bars"></i>
                         </button>
+                        <div class="page-title">
+                            <h1 id="pageTitle"><i class="fas fa-tachometer-alt"></i> Student Dashboard</h1>
+                        </div>
                     </div>
 
-                    <div class="dashboard-cards">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-user-circle"></i> Personal Information
-                                </div>
-                                <div class="card-icon">
-                                    <i class="fas fa-id-card"></i>
-                                </div>
+                    <div class="header-right">
+                        <div class="notification-wrapper">
+                            <button class="notification-btn" id="notificationBtn">
+                                <i class="fas fa-bell"></i>
+                                <span class="notification-badge">5</span>
+                            </button>
+                        </div>
+
+                        <div class="student-profile-header">
+                            <div class="student-avatar-small">JS</div>
+                            <div class="student-info-header">
+                                <h4>John Smith</h4>
+                                <p>Class 10 - A</p>
                             </div>
-                            <div class="card-content">
-                                <div class="student-profile-details">
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Full Name</div>
-                                        <div class="detail-value">John Smith</div>
-                                    </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Student ID</div>
-                                        <div class="detail-value">STU2023001</div>
-                                    </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Date of Birth</div>
-                                        <div class="detail-value">June 15, 2008</div>
-                                    </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Gender</div>
-                                        <div class="detail-value">Male</div>
-                                    </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Email</div>
-                                        <div class="detail-value">john.smith@school.edu</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Phone</div>
-                                        <div class="detail-value">+1 (555) 123-4567</div>
-                                    </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Area (Dynamic based on page) -->
+                <div class="content" id="contentArea">
+                    <!-- Dashboard Content (Default) -->
+                    <div id="dashboardPage" class="page-content">
+                        <div class="welcome-banner">
+                            <div class="welcome-banner-content">
+                                <h2>Welcome back, John!</h2>
+                                <p>You have 3 pending assignments, 2 new study materials, and your attendance is 94%
+                                    this month.</p>
+                            </div>
+                            <div class="quick-stats">
+                                <div class="quick-stat-item">
+                                    <div class="quick-stat-value">94%</div>
+                                    <div class="quick-stat-label">Attendance</div>
+                                </div>
+                                <div class="quick-stat-item">
+                                    <div class="quick-stat-value">A-</div>
+                                    <div class="quick-stat-label">Avg. Grade</div>
+                                </div>
+                                <div class="quick-stat-item">
+                                    <div class="quick-stat-value">6</div>
+                                    <div class="quick-stat-label">Subjects</div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-school"></i> Academic Information
+
+                        <div class="dashboard-cards">
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fas fa-book-open"></i> My Subjects
+                                    </div>
+                                    <div class="card-icon">
+                                        <i class="fas fa-book"></i>
+                                    </div>
                                 </div>
-                                <div class="card-icon">
-                                    <i class="fas fa-graduation-cap"></i>
+                                <div class="card-content">
+                                    <p>You are currently enrolled in 6 subjects. View your subjects, teachers, and
+                                        access study materials.</p>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn btn-primary" data-page="subjects">
+                                        <i class="fas fa-eye"></i> View Subjects
+                                    </button>
                                 </div>
                             </div>
-                            <div class="card-content">
-                                <div class="student-academic-details">
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Class & Section</div>
-                                        <div class="detail-value">Class 10 - Section A</div>
+
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fas fa-tasks"></i> Pending Assignments
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Roll Number</div>
-                                        <div class="detail-value">15</div>
+                                    <div class="card-icon">
+                                        <i class="fas fa-clipboard-list"></i>
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Academic Year</div>
-                                        <div class="detail-value">2023-2024</div>
+                                </div>
+                                <div class="card-content">
+                                    <p>You have 3 assignments pending submission. Check deadlines and submit your work.
+                                    </p>
+                                    <div class="mt-2">
+                                        <span class="badge badge-danger">2 overdue</span>
+                                        <span class="badge badge-warning">1 pending</span>
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Class Teacher</div>
-                                        <div class="detail-value">Ms. Sarah Johnson</div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn btn-primary" data-page="assignments">
+                                        <i class="fas fa-external-link-alt"></i> Go to Assignments
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fas fa-chart-line"></i> Performance
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Enrollment Date</div>
-                                        <div class="detail-value">August 1, 2023</div>
+                                    <div class="card-icon">
+                                        <i class="fas fa-chart-bar"></i>
                                     </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Status</div>
-                                        <div class="detail-value"><span class="badge badge-success">Active</span></div>
+                                </div>
+                                <div class="card-content">
+                                    <p>View your attendance records, exam results, and performance analytics.</p>
+                                    <div class="mt-2">
+                                        <span class="badge badge-success">94% attendance</span>
+                                        <span class="badge badge-primary">A- average</span>
                                     </div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn btn-primary" data-page="attendance">
+                                        <i class="fas fa-chart-pie"></i> View Reports
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-home"></i> Address Information
+
+                        <div class="chart-card">
+                            <h3>Monthly Attendance Trend</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="attendanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subjects Page (Hidden by default) -->
+                    <div id="subjectsPage" class="page-content" style="display: none;">
+                        <div class="page-header">
+                            <h1><i class="fas fa-book-open"></i> My Subjects</h1>
+                            <div class="filter-options">
+                                <select class="filter-select" id="subjectFilter">
+                                    <option value="all">All Subjects</option>
+                                    <option value="science">Science</option>
+                                    <option value="math">Mathematics</option>
+                                    <option value="language">Languages</option>
+                                    <option value="arts">Arts & Humanities</option>
+                                </select>
+                                <button class="btn btn-outline">
+                                    <i class="fas fa-download"></i> Export List
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="subjects-grid" id="subjectsContainer">
+                            <!-- Subjects will be loaded here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Study Materials Page (Hidden by default) -->
+                    <div id="studyMaterialsPage" class="page-content" style="display: none;">
+                        <div class="page-header">
+                            <h1><i class="fas fa-video"></i> Study Materials</h1>
+                            <div class="filter-options">
+                                <select class="filter-select" id="materialFilter">
+                                    <option value="all">All Materials</option>
+                                    <option value="video">Videos</option>
+                                    <option value="notes">Notes</option>
+                                    <option value="presentation">Presentations</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="subjects-grid" id="materialsContainer">
+                            <!-- Study materials will be loaded here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Assignments Page (Hidden by default) -->
+                    <div id="assignmentsPage" class="page-content" style="display: none;">
+                        <div class="page-header">
+                            <h1><i class="fas fa-tasks"></i> My Assignments</h1>
+                            <div class="filter-options">
+                                <select class="filter-select" id="assignmentFilter">
+                                    <option value="all">All Assignments</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="overdue">Overdue</option>
+                                </select>
+                                <button class="btn btn-primary" id="viewAssignmentCalendarBtn">
+                                    <i class="fas fa-calendar"></i> Calendar View
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="assignments-list" id="assignmentsContainer">
+                            <!-- Assignments will be loaded here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Attendance Page (Hidden by default) -->
+                    <div id="attendancePage" class="page-content" style="display: none;">
+                        <div class="page-header">
+                            <h1><i class="fas fa-calendar-check"></i> Attendance</h1>
+                            <div class="filter-options">
+                                <select class="filter-select" id="attendancePeriod">
+                                    <option value="monthly">This Month</option>
+                                    <option value="semester">This Semester</option>
+                                    <option value="yearly">This Year</option>
+                                </select>
+                                <button class="btn btn-outline">
+                                    <i class="fas fa-print"></i> Print Report
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="stats-container">
+                            <div class="stat-card attendance-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-check"></i>
                                 </div>
-                                <div class="card-icon">
-                                    <i class="fas fa-map-marker-alt"></i>
+                                <div class="stat-info">
+                                    <h3>94%</h3>
+                                    <p>Overall Attendance</p>
+                                    <p class="text-success"><i class="fas fa-arrow-up"></i> 2% from last month</p>
                                 </div>
                             </div>
-                            <div class="card-content">
-                                <div class="student-address-details">
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Address</div>
-                                        <div class="detail-value">123 Main Street, Apt 4B</div>
+
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>4</h3>
+                                    <p>Days Present This Month</p>
+                                    <p>Out of 4 school days</p>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                                    <i class="fas fa-user-times"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>0</h3>
+                                    <p>Days Absent This Month</p>
+                                    <p>Perfect attendance!</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Attendance by Subject</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="attendanceBySubjectChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <div class="table-header">
+                                <h3>Monthly Attendance Record</h3>
+                                <span>April 2024</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table id="attendanceTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Day</th>
+                                            <th>Status</th>
+                                            <th>Subject 1</th>
+                                            <th>Subject 2</th>
+                                            <th>Subject 3</th>
+                                            <th>Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="attendanceTableBody">
+                                        <!-- Attendance data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Page (Hidden by default) -->
+                    <div id="resultsPage" class="page-content" style="display: none;">
+                        <div class="page-header">
+                            <h1><i class="fas fa-chart-line"></i> Results & Grades</h1>
+                            <div class="filter-options">
+                                <select class="filter-select" id="resultsTerm">
+                                    <option value="term1">Term 1</option>
+                                    <option value="term2" selected>Term 2</option>
+                                    <option value="term3">Term 3</option>
+                                    <option value="final">Final Exam</option>
+                                </select>
+                                <button class="btn btn-outline">
+                                    <i class="fas fa-download"></i> Download Report
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="stats-container">
+                            <div class="stat-card result-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>A-</h3>
+                                    <p>Overall Grade</p>
+                                    <p class="text-success"><i class="fas fa-arrow-up"></i> Improved from B+</p>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>86%</h3>
+                                    <p>Average Percentage</p>
+                                    <p>Class Rank: 12/45</p>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                                    <i class="fas fa-medal"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>3</h3>
+                                    <p>Subjects with A Grade</p>
+                                    <p>Mathematics, Science, English</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Subject-wise Performance</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="resultsChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <div class="table-header">
+                                <h3>Term 2 Examination Results</h3>
+                                <span>Published: April 15, 2024</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table id="resultsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Teacher</th>
+                                            <th>Marks Obtained</th>
+                                            <th>Total Marks</th>
+                                            <th>Percentage</th>
+                                            <th>Grade</th>
+                                            <th>Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsTableBody">
+                                        <!-- Results data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Page (Hidden by default) -->
+                    <div id="profilePage" class="page-content" style="display: none;">
+                        <div class="page-header">
+                            <h1><i class="fas fa-user"></i> My Profile</h1>
+                            <button class="btn btn-outline" id="editProfileBtn">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </button>
+                        </div>
+
+                        <div class="dashboard-cards">
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fas fa-user-circle"></i> Personal Information
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">City</div>
-                                        <div class="detail-value">New York</div>
+                                    <div class="card-icon">
+                                        <i class="fas fa-id-card"></i>
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">State</div>
-                                        <div class="detail-value">NY</div>
+                                </div>
+                                <div class="card-content">
+                                    <div class="student-profile-details">
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Full Name</div>
+                                            <div class="detail-value">John Smith</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Student ID</div>
+                                            <div class="detail-value">STU2023001</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Date of Birth</div>
+                                            <div class="detail-value">June 15, 2008</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Gender</div>
+                                            <div class="detail-value">Male</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Email</div>
+                                            <div class="detail-value">john.smith@school.edu</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">Phone</div>
+                                            <div class="detail-value">+1 (555) 123-4567</div>
+                                        </div>
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">ZIP Code</div>
-                                        <div class="detail-value">10001</div>
+                                </div>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fas fa-school"></i> Academic Information
                                     </div>
-                                    <div class="detail-item mb-2">
-                                        <div class="detail-label">Country</div>
-                                        <div class="detail-value">United States</div>
+                                    <div class="card-icon">
+                                        <i class="fas fa-graduation-cap"></i>
                                     </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Emergency Contact</div>
-                                        <div class="detail-value">Robert Smith (Father) - +1 (555) 987-6543</div>
+                                </div>
+                                <div class="card-content">
+                                    <div class="student-academic-details">
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Class & Section</div>
+                                            <div class="detail-value">Class 10 - Section A</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Roll Number</div>
+                                            <div class="detail-value">15</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Academic Year</div>
+                                            <div class="detail-value">2023-2024</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Class Teacher</div>
+                                            <div class="detail-value">Ms. Sarah Johnson</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Enrollment Date</div>
+                                            <div class="detail-value">August 1, 2023</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">Status</div>
+                                            <div class="detail-value"><span class="badge badge-success">Active</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fas fa-home"></i> Address Information
+                                    </div>
+                                    <div class="card-icon">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                </div>
+                                <div class="card-content">
+                                    <div class="student-address-details">
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Address</div>
+                                            <div class="detail-value">123 Main Street, Apt 4B</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">City</div>
+                                            <div class="detail-value">New York</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">State</div>
+                                            <div class="detail-value">NY</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">ZIP Code</div>
+                                            <div class="detail-value">10001</div>
+                                        </div>
+                                        <div class="detail-item mb-2">
+                                            <div class="detail-label">Country</div>
+                                            <div class="detail-value">United States</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">Emergency Contact</div>
+                                            <div class="detail-value">Robert Smith (Father) - +1 (555) 987-6543</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1843,7 +2130,7 @@
                     <p id="modalAssignmentSubject" class="text-success">Subject: Mathematics</p>
                     <p id="modalAssignmentDeadline">Deadline: April 30, 2024</p>
                 </div>
-                
+
                 <div class="file-upload-area" id="fileUploadArea">
                     <div class="file-upload-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
@@ -1853,9 +2140,10 @@
                         <p>Drag & drop files here or click to browse</p>
                         <p class="text-warning">Accepted formats: PDF, DOC, DOCX, PPT, JPEG, PNG (Max: 10MB)</p>
                     </div>
-                    <input type="file" class="file-input" id="assignmentFileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png">
+                    <input type="file" class="file-input" id="assignmentFileInput"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png">
                 </div>
-                
+
                 <div id="selectedFileContainer" style="display: none;">
                     <div class="selected-file">
                         <div class="file-info">
@@ -1870,12 +2158,13 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="form-group mt-3">
                     <label for="assignmentComments">Additional Comments (Optional)</label>
-                    <textarea id="assignmentComments" class="form-control" rows="3" placeholder="Add any comments for your teacher..."></textarea>
+                    <textarea id="assignmentComments" class="form-control" rows="3"
+                        placeholder="Add any comments for your teacher..."></textarea>
                 </div>
-                
+
                 <div class="modal-actions mt-3">
                     <button class="btn btn-primary" id="submitAssignmentBtn" style="width: 100%;">
                         <i class="fas fa-paper-plane"></i> Submit Assignment
@@ -1901,15 +2190,17 @@
                     <p id="modalMaterialType">Type: Video Lesson</p>
                     <p id="modalMaterialDuration">Duration: 15 minutes</p>
                 </div>
-                
+
                 <div class="video-player mb-3" id="videoPlayer" style="display: none;">
-                    <div style="background-color: #000; border-radius: 8px; padding: 56.25% 0 0 0; position: relative;">
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; background-color: #1e293b;">
+                    <div
+                        style="background-color: #000; border-radius: 8px; padding: 56.25% 0 0 0; position: relative;">
+                        <div
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; background-color: #1e293b;">
                             <i class="fas fa-play-circle"></i>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="document-viewer mb-3" id="documentViewer" style="display: none;">
                     <div style="background-color: #f8fafc; border-radius: 8px; padding: 2rem; text-align: center;">
                         <i class="fas fa-file-pdf" style="font-size: 4rem; color: #ef4444;"></i>
@@ -1917,7 +2208,7 @@
                         <p>Click download to view this document</p>
                     </div>
                 </div>
-                
+
                 <div class="material-actions mt-3">
                     <button class="btn btn-primary" id="playMaterialBtn" style="display: none;">
                         <i class="fas fa-play"></i> Play Video
@@ -1938,17 +2229,18 @@
         const loginPage = document.getElementById('loginPage');
         const studentDashboard = document.getElementById('studentDashboard');
         const loginBtn = document.getElementById('loginBtn');
-        const sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
         const toggleSidebarBtn = document.getElementById('toggleSidebar');
         const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const mainContent = document.getElementById('mainContent');
         const notificationBtn = document.getElementById('notificationBtn');
-        
+
         // Page navigation elements
         const menuItems = document.querySelectorAll('.menu-item');
         const pageTitle = document.getElementById('pageTitle');
         const contentArea = document.getElementById('contentArea');
         const pageContents = document.querySelectorAll('.page-content');
-        
+
         // Modal elements
         const assignmentModal = document.getElementById('assignmentModal');
         const materialModal = document.getElementById('materialModal');
@@ -1960,7 +2252,7 @@
         const submitAssignmentBtn = document.getElementById('submitAssignmentBtn');
         const playMaterialBtn = document.getElementById('playMaterialBtn');
         const downloadMaterialBtn = document.getElementById('downloadMaterialBtn');
-        
+
         // Sample data
         const studentData = {
             name: "John Smith",
@@ -1971,9 +2263,8 @@
             averageGrade: "A-",
             subjectsCount: 6
         };
-        
-        const subjectsData = [
-            {
+
+        const subjectsData = [{
                 id: 1,
                 name: "Mathematics",
                 code: "MATH101",
@@ -1981,10 +2272,21 @@
                 teacherAvatar: "DW",
                 description: "Algebra, Geometry, Calculus",
                 color: "#3b82f6",
-                resources: [
-                    { type: "video", name: "Introduction to Algebra", duration: "15 min" },
-                    { type: "notes", name: "Geometry Formulas", pages: 12 },
-                    { type: "presentation", name: "Calculus Basics", slides: 25 }
+                resources: [{
+                        type: "video",
+                        name: "Introduction to Algebra",
+                        duration: "15 min"
+                    },
+                    {
+                        type: "notes",
+                        name: "Geometry Formulas",
+                        pages: 12
+                    },
+                    {
+                        type: "presentation",
+                        name: "Calculus Basics",
+                        slides: 25
+                    }
                 ]
             },
             {
@@ -1995,10 +2297,21 @@
                 teacherAvatar: "SJ",
                 description: "Physics, Chemistry, Biology",
                 color: "#10b981",
-                resources: [
-                    { type: "video", name: "Chemical Reactions", duration: "18 min" },
-                    { type: "notes", name: "Physics Laws", pages: 15 },
-                    { type: "presentation", name: "Human Anatomy", slides: 30 }
+                resources: [{
+                        type: "video",
+                        name: "Chemical Reactions",
+                        duration: "18 min"
+                    },
+                    {
+                        type: "notes",
+                        name: "Physics Laws",
+                        pages: 15
+                    },
+                    {
+                        type: "presentation",
+                        name: "Human Anatomy",
+                        slides: 30
+                    }
                 ]
             },
             {
@@ -2009,10 +2322,21 @@
                 teacherAvatar: "EB",
                 description: "Grammar, Composition, Literature",
                 color: "#8b5cf6",
-                resources: [
-                    { type: "video", name: "Shakespeare Analysis", duration: "22 min" },
-                    { type: "notes", name: "Grammar Rules", pages: 20 },
-                    { type: "presentation", name: "Essay Writing", slides: 18 }
+                resources: [{
+                        type: "video",
+                        name: "Shakespeare Analysis",
+                        duration: "22 min"
+                    },
+                    {
+                        type: "notes",
+                        name: "Grammar Rules",
+                        pages: 20
+                    },
+                    {
+                        type: "presentation",
+                        name: "Essay Writing",
+                        slides: 18
+                    }
                 ]
             },
             {
@@ -2023,10 +2347,21 @@
                 teacherAvatar: "RM",
                 description: "World History, Civics",
                 color: "#f59e0b",
-                resources: [
-                    { type: "video", name: "World War II", duration: "25 min" },
-                    { type: "notes", name: "Ancient Civilizations", pages: 22 },
-                    { type: "presentation", name: "Government Systems", slides: 28 }
+                resources: [{
+                        type: "video",
+                        name: "World War II",
+                        duration: "25 min"
+                    },
+                    {
+                        type: "notes",
+                        name: "Ancient Civilizations",
+                        pages: 22
+                    },
+                    {
+                        type: "presentation",
+                        name: "Government Systems",
+                        slides: 28
+                    }
                 ]
             },
             {
@@ -2037,10 +2372,21 @@
                 teacherAvatar: "AC",
                 description: "Programming, Algorithms",
                 color: "#ef4444",
-                resources: [
-                    { type: "video", name: "Python Basics", duration: "20 min" },
-                    { type: "notes", name: "Data Structures", pages: 18 },
-                    { type: "presentation", name: "Web Development", slides: 35 }
+                resources: [{
+                        type: "video",
+                        name: "Python Basics",
+                        duration: "20 min"
+                    },
+                    {
+                        type: "notes",
+                        name: "Data Structures",
+                        pages: 18
+                    },
+                    {
+                        type: "presentation",
+                        name: "Web Development",
+                        slides: 35
+                    }
                 ]
             },
             {
@@ -2051,16 +2397,26 @@
                 teacherAvatar: "MD",
                 description: "Sports, Health, Fitness",
                 color: "#06b6d4",
-                resources: [
-                    { type: "video", name: "Basketball Techniques", duration: "12 min" },
-                    { type: "notes", name: "Nutrition Guide", pages: 10 },
-                    { type: "presentation", name: "Exercise Routines", slides: 22 }
+                resources: [{
+                        type: "video",
+                        name: "Basketball Techniques",
+                        duration: "12 min"
+                    },
+                    {
+                        type: "notes",
+                        name: "Nutrition Guide",
+                        pages: 10
+                    },
+                    {
+                        type: "presentation",
+                        name: "Exercise Routines",
+                        slides: 22
+                    }
                 ]
             }
         ];
-        
-        const assignmentsData = [
-            {
+
+        const assignmentsData = [{
                 id: 1,
                 title: "Algebra Problem Set",
                 subject: "Mathematics",
@@ -2121,97 +2477,210 @@
                 maxMarks: 25
             }
         ];
-        
-        const attendanceData = [
-            { date: "2024-04-01", day: "Monday", status: "present", subject1: "present", subject2: "present", subject3: "present", remarks: "" },
-            { date: "2024-04-02", day: "Tuesday", status: "present", subject1: "present", subject2: "present", subject3: "present", remarks: "" },
-            { date: "2024-04-03", day: "Wednesday", status: "present", subject1: "present", subject2: "present", subject3: "present", remarks: "" },
-            { date: "2024-04-04", day: "Thursday", status: "present", subject1: "present", subject2: "present", subject3: "present", remarks: "" }
+
+        const attendanceData = [{
+                date: "2024-04-01",
+                day: "Monday",
+                status: "present",
+                subject1: "present",
+                subject2: "present",
+                subject3: "present",
+                remarks: ""
+            },
+            {
+                date: "2024-04-02",
+                day: "Tuesday",
+                status: "present",
+                subject1: "present",
+                subject2: "present",
+                subject3: "present",
+                remarks: ""
+            },
+            {
+                date: "2024-04-03",
+                day: "Wednesday",
+                status: "present",
+                subject1: "present",
+                subject2: "present",
+                subject3: "present",
+                remarks: ""
+            },
+            {
+                date: "2024-04-04",
+                day: "Thursday",
+                status: "present",
+                subject1: "present",
+                subject2: "present",
+                subject3: "present",
+                remarks: ""
+            }
         ];
-        
-        const resultsData = [
-            { subject: "Mathematics", teacher: "Mr. David Wilson", marks: 85, totalMarks: 100, percentage: 85, grade: "A", remarks: "Excellent work" },
-            { subject: "Science", teacher: "Ms. Sarah Johnson", marks: 88, totalMarks: 100, percentage: 88, grade: "A", remarks: "Very good understanding" },
-            { subject: "English Literature", teacher: "Mrs. Emily Brown", marks: 82, totalMarks: 100, percentage: 82, grade: "B+", remarks: "Good effort" },
-            { subject: "History", teacher: "Mr. Robert Miller", marks: 78, totalMarks: 100, percentage: 78, grade: "B", remarks: "Satisfactory" },
-            { subject: "Computer Science", teacher: "Mr. Alex Chen", marks: 92, totalMarks: 100, percentage: 92, grade: "A", remarks: "Outstanding" },
-            { subject: "Physical Education", teacher: "Coach Michael Davis", marks: 95, totalMarks: 100, percentage: 95, grade: "A+", remarks: "Excellent performance" }
+
+        const resultsData = [{
+                subject: "Mathematics",
+                teacher: "Mr. David Wilson",
+                marks: 85,
+                totalMarks: 100,
+                percentage: 85,
+                grade: "A",
+                remarks: "Excellent work"
+            },
+            {
+                subject: "Science",
+                teacher: "Ms. Sarah Johnson",
+                marks: 88,
+                totalMarks: 100,
+                percentage: 88,
+                grade: "A",
+                remarks: "Very good understanding"
+            },
+            {
+                subject: "English Literature",
+                teacher: "Mrs. Emily Brown",
+                marks: 82,
+                totalMarks: 100,
+                percentage: 82,
+                grade: "B+",
+                remarks: "Good effort"
+            },
+            {
+                subject: "History",
+                teacher: "Mr. Robert Miller",
+                marks: 78,
+                totalMarks: 100,
+                percentage: 78,
+                grade: "B",
+                remarks: "Satisfactory"
+            },
+            {
+                subject: "Computer Science",
+                teacher: "Mr. Alex Chen",
+                marks: 92,
+                totalMarks: 100,
+                percentage: 92,
+                grade: "A",
+                remarks: "Outstanding"
+            },
+            {
+                subject: "Physical Education",
+                teacher: "Coach Michael Davis",
+                marks: 95,
+                totalMarks: 100,
+                percentage: 95,
+                grade: "A+",
+                remarks: "Excellent performance"
+            }
         ];
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Student Panel initialized");
-            
+            console.log("Student Panel initialized with fixed layout");
+
             // Load sample data
             loadSubjects();
             loadAssignments();
             loadAttendanceTable();
             loadResultsTable();
             initializeCharts();
-            
+
             // Set up event listeners
             setupEventListeners();
+
+            // Set initial sidebar state based on screen size
+            updateSidebarState();
         });
-        
+
+        // Update sidebar state based on screen size
+        function updateSidebarState() {
+            if (window.innerWidth <= 1024) {
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.remove('active');
+                mainContent.classList.remove('expanded');
+            } else {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+        }
+
         // Set up all event listeners
         function setupEventListeners() {
             // Login button
             loginBtn.addEventListener('click', function() {
                 const studentId = document.getElementById('studentId').value;
                 const password = document.getElementById('password').value;
-                
+
                 if (studentId && password) {
                     loginPage.style.display = 'none';
                     studentDashboard.style.display = 'block';
-                    
+
                     // Update student name in header
                     document.querySelector('.student-info-header h4').textContent = studentData.name;
                     document.querySelector('.student-info-sidebar h3').textContent = studentData.name;
-                    
+
                     showNotification('Login successful! Welcome to your student dashboard.', 'success');
                 } else {
                     alert('Please enter both Student ID and Password');
                 }
             });
-            
-            // Logout buttons
-            sidebarLogoutBtn.addEventListener('click', logout);
-            
-            // Toggle sidebar on mobile
-            toggleSidebarBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
+
+            // Toggle sidebar function
+            const toggleSidebar = () => {
+                const isMobile = window.innerWidth <= 1024;
+
+                if (isMobile) {
+                    sidebar.classList.toggle('active');
+                    sidebarOverlay.classList.toggle('active');
+                    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            };
+
+            // Toggle sidebar buttons
+            toggleSidebarBtn.addEventListener('click', toggleSidebar);
+
+            // Close sidebar overlay click
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
             });
-            
+
             // Notification button
             notificationBtn.addEventListener('click', function() {
-                showNotification('You have 5 notifications:\n- 2 new study materials\n- 1 assignment graded\n- 1 attendance update\n- 1 message from teacher', 'info');
+                showNotification(
+                    'You have 5 notifications:\n- 2 new study materials\n- 1 assignment graded\n- 1 attendance update\n- 1 message from teacher',
+                    'info');
                 this.querySelector('.notification-badge').style.display = 'none';
             });
-            
+
             // Menu navigation
             menuItems.forEach(item => {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     // Remove active class from all menu items
                     menuItems.forEach(i => i.classList.remove('active'));
-                    
+
                     // Add active class to clicked item
                     this.classList.add('active');
-                    
+
                     // Get the page to show
                     const page = this.getAttribute('data-page');
-                    
+
                     // Show the corresponding page
                     showPage(page);
-                    
+
                     // Close sidebar on mobile after clicking
                     if (window.innerWidth <= 1024) {
                         sidebar.classList.remove('active');
+                        sidebarOverlay.classList.remove('active');
+                        document.body.style.overflow = '';
                     }
                 });
             });
-            
+
             // Dashboard card buttons navigation
             document.querySelectorAll('.dashboard-card .btn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -2225,31 +2694,31 @@
                     }
                 });
             });
-            
+
             // Close modals
             closeAssignmentModal.addEventListener('click', function() {
                 assignmentModal.classList.remove('active');
             });
-            
+
             closeMaterialModal.addEventListener('click', function() {
                 materialModal.classList.remove('active');
             });
-            
+
             // File upload handling
             fileUploadArea.addEventListener('click', function() {
                 assignmentFileInput.click();
             });
-            
+
             assignmentFileInput.addEventListener('change', function() {
                 if (this.files.length > 0) {
                     const file = this.files[0];
                     const fileName = file.name;
                     const fileSize = (file.size / (1024 * 1024)).toFixed(2); // Convert to MB
-                    
+
                     document.getElementById('selectedFileName').textContent = fileName;
                     document.getElementById('selectedFileSize').textContent = `${fileSize} MB`;
                     selectedFileContainer.style.display = 'block';
-                    
+
                     // Validate file size
                     if (file.size > 10 * 1024 * 1024) { // 10MB limit
                         showNotification('File size exceeds 10MB limit. Please choose a smaller file.', 'error');
@@ -2258,49 +2727,49 @@
                     }
                 }
             });
-            
+
             // Remove selected file
             document.getElementById('removeFileBtn').addEventListener('click', function() {
                 assignmentFileInput.value = '';
                 selectedFileContainer.style.display = 'none';
             });
-            
+
             // Submit assignment
             submitAssignmentBtn.addEventListener('click', function() {
                 if (!assignmentFileInput.files.length) {
                     showNotification('Please select a file to upload.', 'error');
                     return;
                 }
-                
+
                 // Simulate submission
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
                 this.disabled = true;
-                
+
                 setTimeout(() => {
                     showNotification('Assignment submitted successfully!', 'success');
                     assignmentModal.classList.remove('active');
                     assignmentFileInput.value = '';
                     selectedFileContainer.style.display = 'none';
                     document.getElementById('assignmentComments').value = '';
-                    
+
                     this.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assignment';
                     this.disabled = false;
-                    
+
                     // Update assignments list
                     loadAssignments();
                 }, 1500);
             });
-            
+
             // Play material button
             playMaterialBtn.addEventListener('click', function() {
                 showNotification('Video playback started in fullscreen mode.', 'info');
             });
-            
+
             // Download material button
             downloadMaterialBtn.addEventListener('click', function() {
                 showNotification('Download started. The file will be saved to your device.', 'success');
             });
-            
+
             // Close modals when clicking outside
             window.addEventListener('click', function(e) {
                 if (e.target === assignmentModal) {
@@ -2310,34 +2779,55 @@
                     materialModal.classList.remove('active');
                 }
             });
-            
+
             // Filter change listeners
             document.getElementById('subjectFilter').addEventListener('change', loadSubjects);
             document.getElementById('assignmentFilter').addEventListener('change', loadAssignments);
             document.getElementById('attendancePeriod').addEventListener('change', loadAttendanceTable);
             document.getElementById('resultsTerm').addEventListener('change', loadResultsTable);
-            
+
             // Edit profile button
             document.getElementById('editProfileBtn').addEventListener('click', function() {
                 showNotification('Profile editing feature would open here.', 'info');
             });
-            
+
             // View assignment calendar button
             document.getElementById('viewAssignmentCalendarBtn').addEventListener('click', function() {
                 showNotification('Calendar view would open here showing all assignment deadlines.', 'info');
             });
+
+            // Close material button
+            document.getElementById('closeMaterialBtn').addEventListener('click', function() {
+                materialModal.classList.remove('active');
+            });
+
+            // Handle window resize
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    updateSidebarState();
+
+                    // Close mobile sidebar if resizing to desktop
+                    if (window.innerWidth > 1024) {
+                        sidebar.classList.remove('active');
+                        sidebarOverlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                }, 250);
+            });
         }
-        
+
         // Show a specific page
         function showPage(page) {
             // Hide all page contents
             pageContents.forEach(content => {
                 content.style.display = 'none';
             });
-            
+
             // Show the selected page
             document.getElementById(`${page}Page`).style.display = 'block';
-            
+
             // Update page title
             const pageTitles = {
                 dashboard: '<i class="fas fa-tachometer-alt"></i> Student Dashboard',
@@ -2348,21 +2838,24 @@
                 results: '<i class="fas fa-chart-line"></i> Results & Grades',
                 profile: '<i class="fas fa-user"></i> My Profile'
             };
-            
+
             pageTitle.innerHTML = pageTitles[page] || '<i class="fas fa-tachometer-alt"></i> Student Dashboard';
+
+            // Update page title in document
+            document.title = `${pageTitle.textContent} | School Management System`;
         }
-        
+
         // Load subjects into the subjects page
         function loadSubjects() {
             const subjectsContainer = document.getElementById('subjectsContainer');
             const filter = document.getElementById('subjectFilter').value;
-            
+
             // Clear container
             subjectsContainer.innerHTML = '';
-            
+
             // Filter subjects if needed
             let filteredSubjects = subjectsData;
-            
+
             // Add subjects to container
             filteredSubjects.forEach(subject => {
                 const subjectCard = document.createElement('div');
@@ -2417,61 +2910,64 @@
                         </div>
                     </div>
                 `;
-                
+
                 subjectsContainer.appendChild(subjectCard);
             });
-            
+
             // Add event listeners to material buttons
             document.querySelectorAll('.view-material-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const subject = this.getAttribute('data-subject');
                     const type = this.getAttribute('data-type');
                     const title = this.getAttribute('data-title');
-                    
+
                     openMaterialModal(subject, type, title);
                 });
             });
         }
-        
+
         // Load assignments into the assignments page
         function loadAssignments() {
             const assignmentsContainer = document.getElementById('assignmentsContainer');
             const filter = document.getElementById('assignmentFilter').value;
-            
+
             // Clear container
             assignmentsContainer.innerHTML = '';
-            
+
             // Filter assignments
             let filteredAssignments = assignmentsData;
             if (filter !== 'all') {
                 filteredAssignments = assignmentsData.filter(assignment => assignment.status === filter);
             }
-            
+
             // Add assignments to container
             filteredAssignments.forEach(assignment => {
                 // Format due date
                 const dueDate = new Date(assignment.dueDate);
-                const formattedDueDate = dueDate.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                const formattedDueDate = dueDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 });
-                
+
                 // Calculate days remaining
                 const today = new Date();
                 const timeDiff = dueDate.getTime() - today.getTime();
                 const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                
+
                 // Status badge
                 let statusBadge = '';
                 if (assignment.status === 'pending') {
-                    statusBadge = `<span class="assignment-status status-pending">Pending (${daysRemaining} days left)</span>`;
+                    statusBadge =
+                        `<span class="assignment-status status-pending">Pending (${daysRemaining} days left)</span>`;
                 } else if (assignment.status === 'submitted') {
-                    statusBadge = `<span class="assignment-status status-submitted">Submitted (${assignment.marks}/${assignment.maxMarks})</span>`;
+                    statusBadge =
+                        `<span class="assignment-status status-submitted">Submitted (${assignment.marks}/${assignment.maxMarks})</span>`;
                 } else if (assignment.status === 'overdue') {
-                    statusBadge = `<span class="assignment-status status-overdue">Overdue (${Math.abs(daysRemaining)} days late)</span>`;
+                    statusBadge =
+                        `<span class="assignment-status status-overdue">Overdue (${Math.abs(daysRemaining)} days late)</span>`;
                 }
-                
+
                 const assignmentCard = document.createElement('div');
                 assignmentCard.className = `assignment-card ${assignment.status}`;
                 assignmentCard.innerHTML = `
@@ -2499,32 +2995,32 @@
                             <div class="detail-value" style="text-transform: capitalize;">${assignment.status}</div>
                         </div>
                         ${assignment.submittedDate ? `
-                        <div class="detail-item">
-                            <div class="detail-label">Submitted On</div>
-                            <div class="detail-value">${new Date(assignment.submittedDate).toLocaleDateString()}</div>
-                        </div>
-                        ` : ''}
+                            <div class="detail-item">
+                                <div class="detail-label">Submitted On</div>
+                                <div class="detail-value">${new Date(assignment.submittedDate).toLocaleDateString()}</div>
+                            </div>
+                            ` : ''}
                     </div>
                     <div class="assignment-actions">
                         ${assignment.status === 'pending' || assignment.status === 'overdue' ? `
-                        <button class="btn btn-primary submit-assignment-btn" data-id="${assignment.id}" data-title="${assignment.title}" data-subject="${assignment.subject}" data-duedate="${formattedDueDate}">
-                            <i class="fas fa-upload"></i> Submit Assignment
-                        </button>
-                        ` : ''}
+                            <button class="btn btn-primary submit-assignment-btn" data-id="${assignment.id}" data-title="${assignment.title}" data-subject="${assignment.subject}" data-duedate="${formattedDueDate}">
+                                <i class="fas fa-upload"></i> Submit Assignment
+                            </button>
+                            ` : ''}
                         ${assignment.status === 'submitted' ? `
-                        <button class="btn btn-outline">
-                            <i class="fas fa-eye"></i> View Submission
-                        </button>
-                        ` : ''}
+                            <button class="btn btn-outline">
+                                <i class="fas fa-eye"></i> View Submission
+                            </button>
+                            ` : ''}
                         <button class="btn btn-outline">
                             <i class="fas fa-question-circle"></i> Ask for Help
                         </button>
                     </div>
                 `;
-                
+
                 assignmentsContainer.appendChild(assignmentCard);
             });
-            
+
             // Add event listeners to submit buttons
             document.querySelectorAll('.submit-assignment-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -2532,17 +3028,17 @@
                     const title = this.getAttribute('data-title');
                     const subject = this.getAttribute('data-subject');
                     const dueDate = this.getAttribute('data-duedate');
-                    
+
                     openAssignmentModal(id, title, subject, dueDate);
                 });
             });
         }
-        
+
         // Load attendance table
         function loadAttendanceTable() {
             const tableBody = document.getElementById('attendanceTableBody');
             tableBody.innerHTML = '';
-            
+
             attendanceData.forEach(record => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -2557,12 +3053,12 @@
                 tableBody.appendChild(row);
             });
         }
-        
+
         // Load results table
         function loadResultsTable() {
             const tableBody = document.getElementById('resultsTableBody');
             tableBody.innerHTML = '';
-            
+
             resultsData.forEach(result => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -2577,7 +3073,7 @@
                 tableBody.appendChild(row);
             });
         }
-        
+
         // Initialize charts
         function initializeCharts() {
             // Dashboard attendance chart
@@ -2613,7 +3109,7 @@
                     }
                 }
             });
-            
+
             // Attendance by subject chart
             const attendanceBySubjectCtx = document.getElementById('attendanceBySubjectChart').getContext('2d');
             new Chart(attendanceBySubjectCtx, {
@@ -2658,7 +3154,7 @@
                     }
                 }
             });
-            
+
             // Results chart
             const resultsCtx = document.getElementById('resultsChart').getContext('2d');
             new Chart(resultsCtx, {
@@ -2666,27 +3162,28 @@
                 data: {
                     labels: ['Mathematics', 'Science', 'English', 'History', 'Computer', 'PE'],
                     datasets: [{
-                        label: 'Your Scores',
-                        data: [85, 88, 82, 78, 92, 95],
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderColor: '#3b82f6',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#3b82f6',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: '#3b82f6'
-                    },
-                    {
-                        label: 'Class Average',
-                        data: [78, 82, 80, 75, 85, 88],
-                        backgroundColor: 'rgba(107, 114, 128, 0.2)',
-                        borderColor: '#6b7280',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#6b7280',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: '#6b7280'
-                    }]
+                            label: 'Your Scores',
+                            data: [85, 88, 82, 78, 92, 95],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#3b82f6',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#3b82f6'
+                        },
+                        {
+                            label: 'Class Average',
+                            data: [78, 82, 80, 75, 85, 88],
+                            backgroundColor: 'rgba(107, 114, 128, 0.2)',
+                            borderColor: '#6b7280',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#6b7280',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#6b7280'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -2703,22 +3200,23 @@
                 }
             });
         }
-        
+
         // Open assignment submission modal
         function openAssignmentModal(id, title, subject, dueDate) {
             document.getElementById('modalAssignmentTitle').textContent = title;
             document.getElementById('modalAssignmentSubject').textContent = `Subject: ${subject}`;
             document.getElementById('modalAssignmentDeadline').textContent = `Deadline: ${dueDate}`;
-            
+
             assignmentModal.classList.add('active');
         }
-        
+
         // Open study material modal
         function openMaterialModal(subject, type, title) {
             document.getElementById('modalMaterialTitle').textContent = title;
             document.getElementById('modalMaterialSubject').textContent = `Subject: ${subject}`;
-            document.getElementById('modalMaterialType').textContent = `Type: ${type === 'video' ? 'Video Lesson' : 'Study Notes'}`;
-            
+            document.getElementById('modalMaterialType').textContent =
+                `Type: ${type === 'video' ? 'Video Lesson' : 'Study Notes'}`;
+
             // Show appropriate content based on type
             if (type === 'video') {
                 document.getElementById('videoPlayer').style.display = 'block';
@@ -2731,10 +3229,10 @@
                 document.getElementById('playMaterialBtn').style.display = 'none';
                 document.getElementById('modalMaterialDuration').textContent = 'Pages: 12';
             }
-            
+
             materialModal.classList.add('active');
         }
-        
+
         // Show notification
         function showNotification(message, type) {
             // Create notification element
@@ -2752,8 +3250,9 @@
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 max-width: 350px;
                 animation: slideIn 0.3s ease;
+                word-break: break-word;
             `;
-            
+
             // Set background color based on type
             if (type === 'success') {
                 notification.style.backgroundColor = '#10b981';
@@ -2764,16 +3263,16 @@
             } else {
                 notification.style.backgroundColor = '#6b7280';
             }
-            
+
             notification.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
                     <div>${message}</div>
                 </div>
             `;
-            
+
             document.body.appendChild(notification);
-            
+
             // Remove notification after 5 seconds
             setTimeout(() => {
                 notification.style.animation = 'slideOut 0.3s ease';
@@ -2783,7 +3282,7 @@
                     }
                 }, 300);
             }, 5000);
-            
+
             // Add CSS for animations
             if (!document.getElementById('notification-styles')) {
                 const style = document.createElement('style');
@@ -2801,20 +3300,21 @@
                 document.head.appendChild(style);
             }
         }
-        
+
         // Logout function
         function logout() {
             if (confirm('Are you sure you want to log out?')) {
                 studentDashboard.style.display = 'none';
                 loginPage.style.display = 'flex';
-                
+
                 // Reset form
                 document.getElementById('studentId').value = '';
                 document.getElementById('password').value = '';
-                
+
                 showNotification('You have been logged out successfully.', 'info');
             }
         }
     </script>
 </body>
+
 </html>
