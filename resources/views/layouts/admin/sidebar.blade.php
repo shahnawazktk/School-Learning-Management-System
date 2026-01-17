@@ -1,8 +1,10 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="logo-container">
-            <i class="fas fa-school logo-icon"></i>
-            <h2>Smart School</h2>
+            <a href="{{ route('dashboard') }}" class="logo-link">
+                <img src="images/logo.png" alt="Smart School Logo" class="logo-img">
+                <h2>Smart School</h2>
+            </a>
         </div>
     </div>
 
@@ -57,14 +59,6 @@
                 <i class="fas fa-cog menu-icon"></i>
                 <span class="menu-text">Settings</span>
             </a>
-        </div>
-    </div>
-
-    <div class="sidebar-footer">
-        <div class="user-avatar">AD</div>
-        <div class="user-info">
-            <h4>Admin User</h4>
-            <p>Administrator</p>
         </div>
     </div>
 </div>

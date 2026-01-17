@@ -46,4 +46,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    protected static function booted()
+{
+    static::created(function ($user) {
+        $admin = User::where('role', 'admin')->first();
+        if ($admin) {
+            $admin->notify(
+                new \App\Notifications\AdminNotification('New user registered')
+            );
+        }
+    });
+}
+
 }

@@ -1,12 +1,12 @@
 @extends('layouts.admin.app')
 @section('content')
-    <div class="dashboard-title">
+    {{-- <div class="dashboard-title">
         <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
         <p>School Management System - Manage classes, teachers, students, and more</p>
-    </div>
+    </div> --}}
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner">
+    {{-- <div class="welcome-banner">
         <div class="welcome-banner-content">
             <h2>Welcome back, Admin User!</h2>
             <p>You are logged in as an Administrator. Last login: Today at 09:45 AM</p>
@@ -25,7 +25,7 @@
                 <div class="quick-stat-label">Classes</div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Stats Cards -->
     <div class="stats-grid">

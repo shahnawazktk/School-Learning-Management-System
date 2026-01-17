@@ -17,5 +17,12 @@ class UserController extends Controller
         'role' => $request->role,
     ]);
 }
+// 🔔 Admin Notification
+    $admin = User::where('role', 'admin')->first();
+    if ($admin) {
+        $admin->notify(new AdminNotification('New user registered'));
+    }
+
+    return redirect()->back();
 
 }

@@ -12,8 +12,27 @@
         <div class="notification-wrapper">
             <button class="notification-btn" id="notificationBtn">
                 <i class="fas fa-bell"></i>
-                <span class="notification-badge">3</span>
+
+                @if (auth()->user()->unreadNotifications->count() > 0)
+                    <span class="notification-badge">
+                        {{ auth()->user()->unreadNotifications->count() }}
+                    </span>
+                @endif
             </button>
+
+            <div class="notification-dropdown" id="notificationDropdown">
+                <ul>
+                    @forelse(auth()->user()->notifications as $notification)
+                        <li class="{{ $notification->read_at ? '' : 'unread' }}">
+                            {{ $notification->data['message'] }}
+                        </li>
+                    @empty
+                        <li>No notifications</li>
+                    @endforelse
+                </ul>
+            </div>
+
+
         </div>
 
         <!-- User Profile Dropdown -->
@@ -35,17 +54,17 @@
 
                 <div class="dropdown-divider"></div>
 
-                <a href="#" class="dropdown-item">
+                <a href="{{ route('admin.profile') }}" class="dropdown-item">
                     <i class="fas fa-user"></i>
                     <span>My Profile</span>
                 </a>
 
-                <a href="#" class="dropdown-item">
+                <a href="{{ route('admin.settings') }}" class="dropdown-item">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
 
-                <a href="#" class="dropdown-item">
+                <a href="{{ route('admin.users') }}" class="dropdown-item">
                     <i class="fas fa-shield-alt"></i>
                     <span>Account Security</span>
                 </a>

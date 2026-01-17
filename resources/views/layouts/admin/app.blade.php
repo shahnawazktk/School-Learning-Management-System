@@ -88,6 +88,25 @@
         .logo-container {
             display: flex;
             align-items: center;
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+
+        .logo-container {
+            display: flex;
+            align-items: center;
             gap: 12px;
             width: 100%;
         }
@@ -323,6 +342,49 @@
         }
 
         .notification-btn {
+            position: relative;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: red;
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 50%;
+        }
+
+        .notification-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background: #fff;
+            width: 250px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .2);
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        .notification-dropdown ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .notification-dropdown ul li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+
+        /* .notification-btn {
             background: none;
             border: none;
             font-size: 1.2rem;
@@ -334,14 +396,14 @@
             padding: 0.5rem;
             border-radius: 5px;
             transition: var(--transition);
-        }
+        } */
 
-        .notification-btn:hover {
+        /* .notification-btn:hover {
             background-color: #f1f5f9;
             color: var(--primary-color);
-        }
+        } */
 
-        .notification-badge {
+        /* .notification-badge {
             position: absolute;
             top: 0;
             right: 0;
@@ -355,7 +417,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-        }
+        } */
 
         /* Content Area */
         .content {
@@ -1562,6 +1624,13 @@
             console.log('4. Mobile-friendly sidebar overlay');
         });
     </script>
+    <script>
+        document.getElementById('notificationBtn').addEventListener('click', function() {
+            document.getElementById('notificationDropdown').classList.toggle('show');
+        });
+    </script>
+
+
 </body>
 
 </html>

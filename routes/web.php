@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\AdminController;
 // use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 
@@ -11,6 +12,29 @@ use App\Http\Controllers\ProfileController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+Route::post('/admin/notifications/read', function () {
+    auth()->user()->unreadNotifications->markAsRead();
+    return back();
+})->name('admin.notifications.read');
+
+Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
+
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])
+        ->name('admin.dashboard');
+
+    Route::get('/profile', [AdminController::class, 'profile'])
+        ->name('admin.profile'); // ✅ FIX
+
+    Route::get('/users', [AdminController::class, 'users'])
+        ->name('admin.users');
+
+    Route::get('/settings', [AdminController::class, 'settings'])
+        ->name('admin.settings');
+
+    Route::post('/logout', [AdminController::class, 'logout'])
+        ->name('admin.logout');
+});
+
 
 Route::get('/', function () {
     return view('welcome');
