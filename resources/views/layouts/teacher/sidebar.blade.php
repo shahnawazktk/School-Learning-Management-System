@@ -1,7 +1,11 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <i class="fas fa-chalkboard-teacher" style="color: var(--primary-color); font-size: 1.8rem;"></i>
-        <h2>Teacher Portal</h2>
+        <div class="logo-container">
+            <a href="{{ route('dashboard') }}" class="logo-link">
+                <img src="{{ asset('img/Smart-logo.png') }}" alt="Smart School Logo" class="logo-img">
+                <h2>Teacher Portal</h2>
+            </a>
+        </div>
     </div>
 
     <div class="teacher-profile-sidebar">

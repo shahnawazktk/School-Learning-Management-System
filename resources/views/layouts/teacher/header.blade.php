@@ -4,7 +4,8 @@
             <i class="fas fa-bars"></i>
         </button>
         <div class="page-title">
-            <h1 id="pageTitle"><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+            <h1 style="cursor:pointer; color:rgb(23, 23, 26);"
+                onclick="window.location='{{ route('teacher.dashboard') }}'" id="pageTitle">Dashboard</h1>
         </div>
     </div>
 

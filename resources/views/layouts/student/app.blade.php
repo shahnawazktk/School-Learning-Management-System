@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Panel | School Management System</title>
+    <link rel="icon" href="{{ asset('img/smart-icon.png') }}" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -179,6 +180,25 @@
             height: var(--header-height);
             min-height: var(--header-height);
             flex-shrink: 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-img {
+            width: 50px;
+            /* 👈 yahan size control hota hai */
+            height: auto;
         }
 
         .sidebar-header h2 {
@@ -2452,23 +2472,23 @@
                             <div class="detail-value" style="text-transform: capitalize;">${assignment.status}</div>
                         </div>
                         ${assignment.submittedDate ? `
-                                                        <div class="detail-item">
-                                                            <div class="detail-label">Submitted On</div>
-                                                            <div class="detail-value">${new Date(assignment.submittedDate).toLocaleDateString()}</div>
-                                                        </div>
-                                                        ` : ''}
+                                                                <div class="detail-item">
+                                                                    <div class="detail-label">Submitted On</div>
+                                                                    <div class="detail-value">${new Date(assignment.submittedDate).toLocaleDateString()}</div>
+                                                                </div>
+                                                                ` : ''}
                     </div>
                     <div class="assignment-actions">
                         ${assignment.status === 'pending' || assignment.status === 'overdue' ? `
-                                                        <button class="btn btn-primary submit-assignment-btn" data-id="${assignment.id}" data-title="${assignment.title}" data-subject="${assignment.subject}" data-duedate="${formattedDueDate}">
-                                                            <i class="fas fa-upload"></i> Submit Assignment
-                                                        </button>
-                                                        ` : ''}
+                                                                <button class="btn btn-primary submit-assignment-btn" data-id="${assignment.id}" data-title="${assignment.title}" data-subject="${assignment.subject}" data-duedate="${formattedDueDate}">
+                                                                    <i class="fas fa-upload"></i> Submit Assignment
+                                                                </button>
+                                                                ` : ''}
                         ${assignment.status === 'submitted' ? `
-                                                        <button class="btn btn-outline">
-                                                            <i class="fas fa-eye"></i> View Submission
-                                                        </button>
-                                                        ` : ''}
+                                                                <button class="btn btn-outline">
+                                                                    <i class="fas fa-eye"></i> View Submission
+                                                                </button>
+                                                                ` : ''}
                         <button class="btn btn-outline">
                             <i class="fas fa-question-circle"></i> Ask for Help
                         </button>

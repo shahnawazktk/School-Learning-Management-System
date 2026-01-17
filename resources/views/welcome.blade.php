@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ env('APP_NAME') }} | Intelligent School Management System</title>
+    <link rel="icon" href="{{ asset('img/smart-icon.png') }}" type="image/png">
 
     <!-- Fonts & Icons -->
     <link
@@ -296,13 +297,18 @@
     <nav class="fixed w-full z-50 glass py-4">
         <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-br from-indigo-600 to-emerald-500 p-3 rounded-2xl shadow-lg">
-                    <i class="fas fa-graduation-cap text-white text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black text-gray-900 tracking-tight">{{ env('APP_NAME') }}</h1>
-                    <p class="text-xs text-gray-500 -mt-1">Intelligent School Management</p>
-                </div>
+                <a href="{{ url('/') }}" class="flex items-center gap-3 hover:bg-gray-100  rounded-xl transition">
+                    <div
+                        class="bg-gradient-to-br from-indigo-600 to-emerald-500 p-3 rounded-2xl  shadow-lg flex items-center justify-center">
+                        <img src="{{ asset('img/Smart-logo.png') }}" alt="Smart School Logo"
+                            class="h-6 w-auto object-contain">
+                    </div>
+
+                    <div>
+                        <h1 class="text-2xl font-black text-gray-900 tracking-tight">{{ env('APP_NAME') }}</h1>
+                        <p class="text-xs text-gray-500 -mt-1">Intelligent School Management</p>
+                    </div>
+                </a>
             </div>
 
             <div class="hidden lg:flex items-center gap-8">
@@ -430,7 +436,8 @@
                             Management</li>
                         <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Gradebook &
                             Reports</li>
-                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Lesson Planning
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Lesson
+                            Planning
                         </li>
                     </ul>
                     <a href="#" class="inline-flex items-center text-indigo-600 font-semibold">

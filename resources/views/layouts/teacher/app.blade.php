@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher | Dashboard</title>
+    <link rel="icon" href="{{ asset('img/smart-icon.png') }}" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -76,6 +77,25 @@
             height: var(--header-height);
             min-height: var(--header-height);
             flex-shrink: 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-img {
+            width: 50px;
+            /* 👈 yahan size control hota hai */
+            height: auto;
         }
 
         .sidebar-header h2 {
