@@ -1,1 +1,4 @@
-<h1>USer Security setting</h1>
+@extends('layouts.admin.app')
+@section('content')
+    <h1>Admin Security setting</h1>
+@endsection

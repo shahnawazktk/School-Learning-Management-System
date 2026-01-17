@@ -4,7 +4,9 @@
             <i class="fas fa-bars"></i>
         </button>
         <div class="breadcrumb">
-            <span>Admin Dashboard</span>
+            <span style="cursor:pointer; color:rgb(23, 23, 26);" onclick="window.location='{{ route('admin.dashboard') }}'">
+                Admin Dashboard
+            </span>
         </div>
     </div>
 

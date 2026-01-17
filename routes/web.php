@@ -22,8 +22,10 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])
         ->name('admin.dashboard');
 
-    Route::get('/profile', [AdminController::class, 'profile'])
-        ->name('admin.profile'); // ✅ FIX
+    // Route::get('/profile', [AdminController::class, 'profile'])
+    //     ->name('admin.profile'); // ✅ FIX
+    Route::get('/profile', [AdminController::class, 'profile'])->name('admin.profile');
+    Route::put('/profile', [AdminController::class, 'updateProfile'])->name('admin.profile.update');
 
     Route::get('/users', [AdminController::class, 'users'])
         ->name('admin.users');
