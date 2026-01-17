@@ -305,17 +305,17 @@
                     </div>
 
                     <div>
-                        <h1 class="text-2xl font-black text-gray-900 tracking-tight">{{ env('APP_NAME') }}</h1>
-                        <p class="text-xs text-gray-500 -mt-1">Intelligent School Management</p>
+                        <h1 class="text-2xl font-black text-gray-200 tracking-tight">{{ env('APP_NAME') }}</h1>
+                        <p class="text-xs text-gray-200 -mt-1">Intelligent School Management</p>
                     </div>
                 </a>
             </div>
 
             <div class="hidden lg:flex items-center gap-8">
-                <a href="#features" class="nav-link text-gray-700">Features</a>
-                <a href="#portals" class="nav-link text-gray-700">Portals</a>
-                <a href="#testimonials" class="nav-link text-gray-700">Testimonials</a>
-                <a href="#contact" class="nav-link text-gray-700">Contact</a>
+                <a href="#features" class="nav-link text-gray-200">Features</a>
+                <a href="#portals" class="nav-link text-gray-200">Portals</a>
+                <a href="#testimonials" class="nav-link text-gray-200">Testimonials</a>
+                <a href="#contact" class="nav-link text-gray-200">Contact</a>
             </div>
 
             <div class="flex items-center gap-4">
@@ -680,10 +680,19 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
                 <div>
                     <div class="flex items-center gap-3 mb-6">
-                        <div class="bg-white p-2 rounded-xl">
-                            <i class="fas fa-graduation-cap text-indigo-600 text-2xl"></i>
-                        </div>
-                        <h2 class="text-2xl font-black">{{ env('APP_NAME') }}</h2>
+                        <a href="{{ url('/') }}"
+                            class="flex items-center gap-3 hover:bg-gray-100  rounded-xl transition">
+                            <div
+                                class="bg-gradient-to-br from-indigo-600 to-emerald-500 p-3 rounded-2xl  shadow-lg flex items-center justify-center">
+                                <img src="{{ asset('img/Smart-logo.png') }}" alt="Smart School Logo"
+                                    class="h-6 w-auto object-contain">
+                            </div>
+
+                            <div>
+                                <h1 class="text-2xl font-black  tracking-tight">{{ env('APP_NAME') }}
+                                </h1>
+                            </div>
+                        </a>
                     </div>
                     <p class="text-gray-300">
                         Empowering educational institutions with intelligent technology solutions since 2018.
