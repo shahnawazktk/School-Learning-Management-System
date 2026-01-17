@@ -2,8 +2,8 @@
     <div class="sidebar-header">
         <div class="logo-container">
             <a href="{{ route('dashboard') }}" class="logo-link">
-                <img src="images/logo.png" alt="Smart School Logo" class="logo-img">
-                <h2>Smart School</h2>
+                <img src="{{ asset('img/Smart-logo.png') }}" alt="Smart School Logo" class="logo-img">
+                <h2>Smart Taleem</h2>
             </a>
         </div>
     </div>

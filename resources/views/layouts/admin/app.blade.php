@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="{{ asset('img/smart-icon.png') }}" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -88,6 +88,7 @@
         .logo-container {
             display: flex;
             align-items: center;
+            width: 100%;
         }
 
         .logo-link {
@@ -98,9 +99,9 @@
         }
 
         .logo-img {
-            width: 40px;
-            height: 40px;
-            margin-right: 10px;
+            width: 50px;
+            /* 👈 yahan size control hota hai */
+            height: auto;
         }
 
 
