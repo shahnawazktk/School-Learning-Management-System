@@ -103,9 +103,9 @@
                 </div>
             </div>
             <div class="feature-actions">
-                <button class="btn btn-primary" data-page="myClasses">
+                <a href="{{ route('teachers.index') }}" class="btn btn-primary" data-page="myClasses">
                     <i class="fas fa-eye"></i> View Classes
-                </button>
+                </a>
                 <button class="btn btn-outline" id="viewScheduleBtn">
                     <i class="fas fa-calendar"></i> Schedule
                 </button>

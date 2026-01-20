@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Frontend\FrontendController;
 // use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -13,6 +14,8 @@ use App\Http\Controllers\Frontend\FrontendController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+Route::resource('teachers', TeacherController::class);
+
 Route::post('/admin/notifications/read', function () {
     auth()->user()->unreadNotifications->markAsRead();
     return back();
