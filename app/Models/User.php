@@ -58,4 +58,34 @@ class User extends Authenticatable
     });
 }
 
+    // Relationships
+    public function admin()
+    {
+        return $this->hasOne(Admin::class);
+    }
+
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
+
+    public function student()
+    {
+        return $this->hasOne(Student::class);
+    }
+
+    public function parent()
+    {
+        return $this->hasOne(Parent::class);
+    }
+
+    public function courses()
+    {
+        return $this->hasMany(Course::class, 'teacher_id');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class, 'teacher_id');
+    }
 }

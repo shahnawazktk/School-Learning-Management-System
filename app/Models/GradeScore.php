@@ -5,18 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class School extends Model
+class GradeScore extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'address',
-        'contact',
+        // Add fields based on migration if any
     ];
 
-    public function grades()
-    {
-        return $this->hasMany(Grade::class);
-    }
+    // Add relations if any
 }
