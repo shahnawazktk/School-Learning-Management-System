@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Frontend\FrontendController;
 // use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -62,10 +63,18 @@ Route::middleware(['auth', 'role:teacher'])->group(function () {
     })->name('teacher.dashboard');
 });
 
-Route::middleware(['auth', 'role:student'])->group(function () {
-    Route::get('/student/dashboard', function () {
-        return view('student.dashboard');
-    })->name('student.dashboard');
+Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
+    Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
+    Route::get('/assignments', [StudentController::class, 'assignments'])->name('assignments');
+    Route::get('/attendance', [StudentController::class, 'attendance'])->name('attendance');
+    Route::get('/results', [StudentController::class, 'results'])->name('results');
+    Route::get('/resources', [StudentController::class, 'resources'])->name('resources');
+    Route::get('/profile', [StudentController::class, 'profile'])->name('profile');
+
+    // API routes for AJAX functionality
+    Route::post('/assignments/{assignment}/submit', [StudentController::class, 'submitAssignment'])->name('assignments.submit');
+    Route::get('/resources/{resource}/download', [StudentController::class, 'downloadResource'])->name('resources.download');
 });
 
 Route::middleware(['auth', 'role:parent'])->group(function () {
