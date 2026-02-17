@@ -52,7 +52,6 @@
                         <span class="auth-brand"><i class="fas fa-graduation-cap"></i></span>
                     </a>
                     <h4 class="mt-3 mb-1 fw-bold text-dark">School LMS Portal</h4>
-                    <p class="text-muted mb-0 small">Secure access for students, teachers, parents, and admins.</p>
                 </div>
 
                 <div class="card auth-card">

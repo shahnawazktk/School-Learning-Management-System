@@ -7,14 +7,8 @@
         @csrf
 
         <div class="mb-4">
-            <p class="small text-uppercase text-muted fw-semibold mb-2">
+            <p class="small text-uppercase text-muted fw-semibold mb-2 text-center">
                 LMS Access
-            </p>
-            <h3 class="fw-bold mb-2">
-                Sign in to continue
-            </h3>
-            <p class="text-muted mb-0">
-                Use your school email and password to access your dashboard.
             </p>
         </div>
 

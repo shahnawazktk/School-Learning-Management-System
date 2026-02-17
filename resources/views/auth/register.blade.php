@@ -3,15 +3,9 @@
         @csrf
 
         <div class="mb-4">
-            <p class="small text-uppercase text-muted fw-semibold mb-2">
-                New Admission
-            </p>
-            <h3 class="fw-bold mb-2">
+            <h3 class="fw-bold mb-2 text-center">
                 Create LMS account
             </h3>
-            <p class="text-muted mb-0">
-                Register as a student, teacher, or parent to access your portal.
-            </p>
         </div>
 
         <div class="mb-3">
