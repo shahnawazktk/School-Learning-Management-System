@@ -20,7 +20,7 @@
     <div class="sidebar-menu">
         <div class="menu-group">
             <div class="menu-group-title">DASHBOARD</div>
-            <a href="#" class="menu-item active" data-page="dashboard">
+            <a href="{{ route('teacher.dashboard') }}" class="menu-item {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
                 <i class="fas fa-tachometer-alt menu-icon"></i>
                 <span class="menu-text">Dashboard</span>
             </a>
@@ -28,53 +28,37 @@
 
         <div class="menu-group">
             <div class="menu-group-title">TEACHING</div>
-            <a href="#" class="menu-item" data-page="myClasses">
+            <a href="{{ route('teacher.courses') }}" class="menu-item {{ request()->routeIs('teacher.courses') ? 'active' : '' }}">
                 <i class="fas fa-chalkboard-teacher menu-icon"></i>
-                <span class="menu-text">My Classes</span>
+                <span class="menu-text">My Courses</span>
             </a>
-            <a href="#" class="menu-item" data-page="subjects">
-                <i class="fas fa-book-open menu-icon"></i>
-                <span class="menu-text">My Subjects</span>
-            </a>
-            <a href="#" class="menu-item" data-page="assignments">
+            <a href="{{ route('teacher.assignments') }}" class="menu-item {{ request()->routeIs('teacher.assignments') ? 'active' : '' }}">
                 <i class="fas fa-tasks menu-icon"></i>
                 <span class="menu-text">Assignments</span>
             </a>
-            <a href="#" class="menu-item" data-page="studyMaterials">
-                <i class="fas fa-video menu-icon"></i>
-                <span class="menu-text">Study Materials</span>
+            <a href="{{ route('teacher.submissions') }}" class="menu-item {{ request()->routeIs('teacher.submissions') ? 'active' : '' }}">
+                <i class="fas fa-file-alt menu-icon"></i>
+                <span class="menu-text">Submissions</span>
+            </a>
+            <a href="{{ route('teacher.exams') }}" class="menu-item {{ request()->routeIs('teacher.exams') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list menu-icon"></i>
+                <span class="menu-text">Exams</span>
             </a>
         </div>
 
         <div class="menu-group">
             <div class="menu-group-title">STUDENTS</div>
-            <a href="#" class="menu-item" data-page="students">
-                <i class="fas fa-user-graduate menu-icon"></i>
-                <span class="menu-text">My Students</span>
-            </a>
-            <a href="#" class="menu-item" data-page="attendance">
+            <a href="{{ route('teacher.attendance') }}" class="menu-item {{ request()->routeIs('teacher.attendance') ? 'active' : '' }}">
                 <i class="fas fa-calendar-check menu-icon"></i>
                 <span class="menu-text">Attendance</span>
-            </a>
-            <a href="#" class="menu-item" data-page="grades">
-                <i class="fas fa-chart-line menu-icon"></i>
-                <span class="menu-text">Grades & Results</span>
             </a>
         </div>
 
         <div class="menu-group">
             <div class="menu-group-title">ACCOUNT</div>
-            <a href="#" class="menu-item" data-page="profile">
+            <a href="{{ route('teacher.profile') }}" class="menu-item {{ request()->routeIs('teacher.profile') ? 'active' : '' }}">
                 <i class="fas fa-user menu-icon"></i>
                 <span class="menu-text">My Profile</span>
-            </a>
-            <a href="#" class="menu-item" data-page="reports">
-                <i class="fas fa-chart-bar menu-icon"></i>
-                <span class="menu-text">Reports</span>
-            </a>
-            <a href="#" class="menu-item">
-                <i class="fas fa-cog menu-icon"></i>
-                <span class="menu-text">Settings</span>
             </a>
         </div>
     </div>

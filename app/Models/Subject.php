@@ -10,11 +10,24 @@ class Subject extends Model
     use HasFactory;
 
     protected $fillable = [
-        // Add fields based on migration if any
+        'name',
+        'code',
+        'description',
+        'credits',
     ];
 
     public function courses()
     {
         return $this->hasMany(Course::class);
+    }
+
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function teacher()
+    {
+        return $this->belongsTo(User::class, 'teacher_id');
     }
 }

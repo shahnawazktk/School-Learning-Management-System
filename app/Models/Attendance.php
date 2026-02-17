@@ -10,8 +10,24 @@ class Attendance extends Model
     use HasFactory;
 
     protected $fillable = [
-        // Add fields based on migration if any
+        'student_id',
+        'course_id',
+        'date',
+        'status',
+        'remarks',
     ];
 
-    // Add relations if any
+    protected $casts = [
+        'date' => 'date',
+    ];
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
 }

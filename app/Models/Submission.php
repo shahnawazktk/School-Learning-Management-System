@@ -10,8 +10,27 @@ class Submission extends Model
     use HasFactory;
 
     protected $fillable = [
-        // Add fields based on migration if any
+        'student_id',
+        'assignment_id',
+        'file_path',
+        'comments',
+        'submitted_at',
+        'marks_obtained',
+        'feedback',
+        'status',
     ];
 
-    // Add relations if any
+    protected $casts = [
+        'submitted_at' => 'datetime',
+    ];
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function assignment()
+    {
+        return $this->belongsTo(Assignment::class);
+    }
 }

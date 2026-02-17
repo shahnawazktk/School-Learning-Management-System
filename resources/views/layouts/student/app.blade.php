@@ -1541,36 +1541,8 @@
 </head>
 
 <body>
-    <!-- Login Page -->
-    <div class="login-container" id="loginPage">
-        <div class="login-box">
-            <div class="login-header">
-                <h1><i class="fas fa-graduation-cap"></i> Student Portal</h1>
-                <p>Login to access your dashboard and learning resources</p>
-            </div>
-            <div class="login-body">
-                <div class="form-group">
-                    <label for="studentId">Student ID</label>
-                    <input type="text" id="studentId" class="form-control" placeholder="Enter your student ID"
-                        value="STU2023001">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="Enter your password"
-                        value="password123">
-                </div>
-                <button class="login-btn" id="loginBtn">
-                    <i class="fas fa-sign-in-alt"></i> Login to Dashboard
-                </button>
-                <div class="login-footer">
-                    <p>Need help? Contact your school administrator</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Student Dashboard (Initially Hidden) -->
-    <div class="student-dashboard" id="studentDashboard">
+    <!-- Student Dashboard -->
+    <div class="student-dashboard" id="studentDashboard" style="display: block;">
         <!-- Sidebar Overlay for Mobile -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -2053,13 +2025,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Student Panel initialized with fixed layout");
 
-            // Load sample data
-            loadSubjects();
-            loadAssignments();
-            loadAttendanceTable();
-            loadResultsTable();
-            initializeCharts();
-
             // Set up event listeners
             setupEventListeners();
 
@@ -2081,25 +2046,6 @@
 
         // Set up all event listeners
         function setupEventListeners() {
-            // Login button
-            loginBtn.addEventListener('click', function() {
-                const studentId = document.getElementById('studentId').value;
-                const password = document.getElementById('password').value;
-
-                if (studentId && password) {
-                    loginPage.style.display = 'none';
-                    studentDashboard.style.display = 'block';
-
-                    // Update student name in header
-                    document.querySelector('.student-info-header h4').textContent = studentData.name;
-                    document.querySelector('.student-info-sidebar h3').textContent = studentData.name;
-
-                    showNotification('Login successful! Welcome to your student dashboard.', 'success');
-                } else {
-                    alert('Please enter both Student ID and Password');
-                }
-            });
-
             // Toggle sidebar function
             const toggleSidebar = () => {
                 const isMobile = window.innerWidth <= 1024;
@@ -2132,31 +2078,7 @@
                 this.querySelector('.notification-badge').style.display = 'none';
             });
 
-            // Menu navigation
-            menuItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-
-                    // Remove active class from all menu items
-                    menuItems.forEach(i => i.classList.remove('active'));
-
-                    // Add active class to clicked item
-                    this.classList.add('active');
-
-                    // Get the page to show
-                    const page = this.getAttribute('data-page');
-
-                    // Show the corresponding page
-                    showPage(page);
-
-                    // Close sidebar on mobile after clicking
-                    if (window.innerWidth <= 1024) {
-                        sidebar.classList.remove('active');
-                        sidebarOverlay.classList.remove('active');
-                        document.body.style.overflow = '';
-                    }
-                });
-            });
+            // Menu navigation removed - using normal Laravel routing
 
             // Dashboard card buttons navigation
             document.querySelectorAll('.dashboard-card .btn').forEach(btn => {

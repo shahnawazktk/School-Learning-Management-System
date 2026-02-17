@@ -4,34 +4,39 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Assignment;
 use App\Models\Submission;
 use App\Models\Attendance;
-use App\Models\Grade;
+use App\Models\GradeScore;
 use App\Models\Resource;
 use App\Models\Course;
 use App\Models\Subject;
+use App\Models\Exam;
 
 class StudentController extends Controller
 {
+    private function getStudent()
+    {
+        $student = Student::where('user_id', Auth::id())->first();
+        if (!$student) {
+            Auth::logout();
+            abort(403, 'Student profile not found. Please contact administrator.');
+        }
+        return $student;
+    }
+
     public function dashboard()
     {
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
+        $student = $this->getStudent();
 
-        if (!$student) {
-            return redirect()->route('login')->with('error', 'Student profile not found.');
-        }
-
-        // Get student's enrollments
         $enrollments = Enrollment::where('student_id', $student->id)
-            ->with(['course', 'subject'])
+            ->with(['course.subject', 'subject'])
             ->get();
 
-        // Get pending assignments
-        $pendingAssignments = Assignment::whereHas('enrollments', function($query) use ($student) {
+        $pendingAssignments = Assignment::whereHas('course.enrollments', function($query) use ($student) {
             $query->where('student_id', $student->id);
         })
         ->where('due_date', '>', now())
@@ -39,25 +44,23 @@ class StudentController extends Controller
             $query->where('student_id', $student->id);
         })
         ->with('course')
+        ->orderBy('due_date', 'asc')
         ->take(5)
         ->get();
 
-        // Get recent submissions
         $recentSubmissions = Submission::where('student_id', $student->id)
-            ->with(['assignment', 'grade'])
+            ->with(['assignment.course'])
             ->orderBy('submitted_at', 'desc')
             ->take(5)
             ->get();
 
-        // Calculate attendance percentage
         $totalClasses = Attendance::where('student_id', $student->id)->count();
         $presentClasses = Attendance::where('student_id', $student->id)
             ->where('status', 'present')
             ->count();
         $attendancePercentage = $totalClasses > 0 ? round(($presentClasses / $totalClasses) * 100, 1) : 0;
 
-        // Get average grade
-        $grades = Grade::where('student_id', $student->id)->get();
+        $grades = GradeScore::where('student_id', $student->id)->get();
         $averageGrade = $grades->avg('percentage') ?? 0;
 
         return view('student.dashboard', compact(
@@ -72,49 +75,203 @@ class StudentController extends Controller
 
     public function subjects()
     {
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
+        $student = $this->getStudent();
 
-        $enrollments = Enrollment::where('student_id', $student->id)
-            ->with(['course', 'subject.teacher'])
-            ->get();
+        $status = request('status');
+        $search = trim((string) request('q'));
 
-        return view('student.subjects', compact('student', 'enrollments'));
+        $enrollmentQuery = Enrollment::where('student_id', $student->id)
+            ->with(['course.subject', 'course.teacher', 'subject'])
+            ->when(in_array($status, ['enrolled', 'completed', 'dropped']), function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($innerQuery) use ($search) {
+                    $innerQuery
+                        ->whereHas('course', function ($courseQuery) use ($search) {
+                            $courseQuery->where('title', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('subject', function ($subjectQuery) use ($search) {
+                            $subjectQuery
+                                ->where('name', 'like', '%' . $search . '%')
+                                ->orWhere('code', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('course.subject', function ($subjectQuery) use ($search) {
+                            $subjectQuery
+                                ->where('name', 'like', '%' . $search . '%')
+                                ->orWhere('code', 'like', '%' . $search . '%');
+                        });
+                });
+            });
+
+        $enrollments = $enrollmentQuery->get();
+        $courseIds = $enrollments->pluck('course_id')->filter()->unique()->values();
+
+        $assignmentsByCourse = Assignment::whereIn('course_id', $courseIds)
+            ->orderBy('due_date')
+            ->get()
+            ->groupBy('course_id');
+
+        $submittedAssignments = Submission::where('student_id', $student->id)
+            ->whereHas('assignment', function ($query) use ($courseIds) {
+                $query->whereIn('course_id', $courseIds);
+            })
+            ->with('assignment:id,course_id')
+            ->get()
+            ->groupBy(function ($submission) {
+                return optional($submission->assignment)->course_id;
+            });
+
+        $subjectCards = $enrollments->map(function ($enrollment) use ($assignmentsByCourse, $submittedAssignments) {
+            $course = $enrollment->course;
+            $subject = $enrollment->subject ?? optional($course)->subject;
+            $courseId = $enrollment->course_id;
+
+            $courseAssignments = $courseId ? ($assignmentsByCourse->get($courseId) ?? collect()) : collect();
+            $submittedForCourse = $courseId ? ($submittedAssignments->get($courseId) ?? collect()) : collect();
+
+            $totalAssignments = $courseAssignments->count();
+            $submittedCount = $submittedForCourse->pluck('assignment_id')->unique()->count();
+            $completion = $totalAssignments > 0 ? (int) round(($submittedCount / $totalAssignments) * 100) : 0;
+            $nextDue = $courseAssignments->first(function ($assignment) {
+                return $assignment->due_date && $assignment->due_date->isFuture();
+            });
+
+            return [
+                'enrollment' => $enrollment,
+                'course' => $course,
+                'subject' => $subject,
+                'teacher' => optional($course)->teacher,
+                'total_assignments' => $totalAssignments,
+                'submitted_assignments' => $submittedCount,
+                'completion' => $completion,
+                'next_due' => $nextDue,
+            ];
+        });
+
+        $stats = [
+            'total_subjects' => $enrollments->count(),
+            'active_subjects' => $enrollments->where('status', 'enrolled')->count(),
+            'total_credits' => $subjectCards->sum(function ($card) {
+                return optional($card['subject'])->credits ?? 0;
+            }),
+            'average_progress' => (int) round($subjectCards->avg('completion') ?? 0),
+        ];
+
+        return view('student.subjects', compact('student', 'enrollments', 'subjectCards', 'stats', 'status', 'search'));
     }
 
     public function assignments()
     {
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
+        $student = $this->getStudent();
 
-        $assignments = Assignment::whereHas('enrollments', function($query) use ($student) {
-            $query->where('student_id', $student->id);
-        })
-        ->with(['course', 'submissions' => function($query) use ($student) {
-            $query->where('student_id', $student->id);
-        }])
-        ->orderBy('due_date', 'desc')
-        ->get();
+        $search = trim((string) request('q'));
+        $status = request('status');
+        $courseId = request('course_id');
+        $sort = request('sort', 'due_asc');
 
-        return view('student.assignments', compact('student', 'assignments'));
+        $enrolledCourseIds = Enrollment::where('student_id', $student->id)
+            ->pluck('course_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $courseOptions = Course::whereIn('id', $enrolledCourseIds)
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        $query = Assignment::whereIn('course_id', $enrolledCourseIds)
+            ->with([
+                'course.subject',
+                'submissions' => function ($submissionQuery) use ($student) {
+                    $submissionQuery->where('student_id', $student->id)->latest('submitted_at');
+                },
+            ])
+            ->when($search !== '', function ($assignmentQuery) use ($search) {
+                $assignmentQuery->where(function ($innerQuery) use ($search) {
+                    $innerQuery
+                        ->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('description', 'like', '%' . $search . '%')
+                        ->orWhereHas('course', function ($courseQuery) use ($search) {
+                            $courseQuery->where('title', 'like', '%' . $search . '%');
+                        });
+                });
+            })
+            ->when($courseId, function ($assignmentQuery) use ($courseId) {
+                $assignmentQuery->where('course_id', $courseId);
+            });
+
+        switch ($sort) {
+            case 'due_desc':
+                $query->orderBy('due_date', 'desc');
+                break;
+            case 'newest':
+                $query->latest();
+                break;
+            case 'oldest':
+                $query->oldest();
+                break;
+            default:
+                $query->orderBy('due_date', 'asc');
+                break;
+        }
+
+        $assignments = $query->get();
+
+        $assignmentCards = $assignments->map(function ($assignment) {
+            $submission = $assignment->submissions->first();
+            $isSubmitted = (bool) $submission;
+            $isOverdue = !$isSubmitted && $assignment->due_date && $assignment->due_date->isPast();
+            $isLateSubmission = $isSubmitted && ($submission->status === 'late');
+            $statusKey = $isSubmitted ? ($isLateSubmission ? 'late' : 'submitted') : ($isOverdue ? 'overdue' : 'pending');
+            $daysLeft = $assignment->due_date ? now()->diffInDays($assignment->due_date, false) : null;
+
+            return [
+                'assignment' => $assignment,
+                'submission' => $submission,
+                'status_key' => $statusKey,
+                'days_left' => $daysLeft,
+            ];
+        })->when(in_array($status, ['pending', 'submitted', 'overdue', 'late']), function ($cards) use ($status) {
+            return $cards->where('status_key', $status)->values();
+        });
+
+        $stats = [
+            'total' => $assignmentCards->count(),
+            'pending' => $assignmentCards->where('status_key', 'pending')->count(),
+            'submitted' => $assignmentCards->where('status_key', 'submitted')->count() + $assignmentCards->where('status_key', 'late')->count(),
+            'overdue' => $assignmentCards->where('status_key', 'overdue')->count(),
+            'avg_score' => $assignmentCards
+                ->pluck('submission')
+                ->filter(fn($submission) => $submission && !is_null($submission->marks_obtained))
+                ->avg('marks_obtained'),
+        ];
+
+        return view('student.assignments', compact(
+            'student',
+            'assignmentCards',
+            'stats',
+            'search',
+            'status',
+            'courseId',
+            'sort',
+            'courseOptions'
+        ));
     }
 
     public function attendance()
     {
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
+        $student = $this->getStudent();
 
         $attendanceRecords = Attendance::where('student_id', $student->id)
             ->with('course')
             ->orderBy('date', 'desc')
             ->get();
 
-        // Calculate attendance statistics
         $totalClasses = $attendanceRecords->count();
         $presentClasses = $attendanceRecords->where('status', 'present')->count();
         $attendancePercentage = $totalClasses > 0 ? round(($presentClasses / $totalClasses) * 100, 1) : 0;
 
-        // Group by month for chart
         $monthlyAttendance = $attendanceRecords->groupBy(function($record) {
             return $record->date->format('M Y');
         })->map(function($monthRecords) {
@@ -133,19 +290,16 @@ class StudentController extends Controller
 
     public function results()
     {
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
+        $student = $this->getStudent();
 
-        $grades = Grade::where('student_id', $student->id)
-            ->with(['course', 'assignment'])
+        $grades = GradeScore::where('student_id', $student->id)
+            ->with(['course', 'assignment', 'exam'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Calculate overall statistics
         $averagePercentage = $grades->avg('percentage') ?? 0;
         $totalSubjects = $grades->unique('course_id')->count();
 
-        // Grade distribution
         $gradeDistribution = [
             'A+' => $grades->where('grade', 'A+')->count(),
             'A' => $grades->where('grade', 'A')->count(),
@@ -168,8 +322,7 @@ class StudentController extends Controller
 
     public function resources()
     {
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
+        $student = $this->getStudent();
 
         $enrollments = Enrollment::where('student_id', $student->id)->get();
 
@@ -183,8 +336,8 @@ class StudentController extends Controller
 
     public function profile()
     {
+        $student = $this->getStudent();
         $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
 
         return view('student.profile', compact('student', 'user'));
     }
@@ -192,56 +345,59 @@ class StudentController extends Controller
     public function submitAssignment(Request $request, $assignmentId)
     {
         $request->validate([
-            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,jpg,jpeg,png|max:10240', // 10MB max
+            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,jpg,jpeg,png,zip|max:10240',
             'comments' => 'nullable|string|max:1000'
         ]);
 
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
-
+        $student = $this->getStudent();
         $assignment = Assignment::findOrFail($assignmentId);
 
-        // Check if student is enrolled in the course
         $enrollment = Enrollment::where('student_id', $student->id)
             ->where('course_id', $assignment->course_id)
             ->first();
 
         if (!$enrollment) {
-            return response()->json(['error' => 'You are not enrolled in this course.'], 403);
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'You are not enrolled in this course.'], 403);
+            }
+            return back()->with('error', 'You are not enrolled in this course.');
         }
 
-        // Check if already submitted
         $existingSubmission = Submission::where('student_id', $student->id)
             ->where('assignment_id', $assignmentId)
             ->first();
 
         if ($existingSubmission) {
-            return response()->json(['error' => 'You have already submitted this assignment.'], 400);
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'You have already submitted this assignment.'], 400);
+            }
+            return back()->with('error', 'You have already submitted this assignment.');
         }
 
-        // Store file
         $filePath = $request->file('file')->store('assignments', 'public');
 
-        // Create submission
+        $status = now() > $assignment->due_date ? 'late' : 'submitted';
+
         Submission::create([
             'student_id' => $student->id,
             'assignment_id' => $assignmentId,
             'file_path' => $filePath,
             'comments' => $request->comments,
             'submitted_at' => now(),
+            'status' => $status,
         ]);
 
-        return response()->json(['success' => 'Assignment submitted successfully!']);
+        if ($request->expectsJson()) {
+            return response()->json(['success' => 'Assignment submitted successfully!']);
+        }
+        return redirect()->route('student.dashboard')->with('success', 'Assignment submitted successfully!');
     }
 
     public function downloadResource($resourceId)
     {
         $resource = Resource::findOrFail($resourceId);
+        $student = $this->getStudent();
 
-        $user = Auth::user();
-        $student = Student::where('user_id', $user->id)->first();
-
-        // Check if student has access to this resource
         $hasAccess = Enrollment::where('student_id', $student->id)
             ->where('course_id', $resource->course_id)
             ->exists();
@@ -250,6 +406,71 @@ class StudentController extends Controller
             abort(403, 'You do not have access to this resource.');
         }
 
-        return response()->download(storage_path('app/public/' . $resource->file_path));
+        $rawPath = trim((string) $resource->file_path);
+        $normalizedPath = ltrim(str_replace('\\', '/', $rawPath), '/');
+
+        if (str_starts_with($normalizedPath, 'storage/')) {
+            $normalizedPath = substr($normalizedPath, 8);
+        }
+
+        $candidatePaths = [
+            Storage::disk('public')->path($normalizedPath),
+            storage_path('app/public/' . $normalizedPath),
+            storage_path('app/' . $normalizedPath),
+            public_path($normalizedPath),
+            public_path('storage/' . $normalizedPath),
+            base_path($normalizedPath),
+        ];
+
+        $resolvedPath = collect($candidatePaths)->first(function ($path) {
+            return is_string($path) && is_file($path);
+        });
+
+        if (!$resolvedPath) {
+            abort(404, 'Resource file not found on server. Please contact administrator.');
+        }
+
+        $downloadName = trim((string) $resource->title);
+        $extension = pathinfo($resolvedPath, PATHINFO_EXTENSION);
+
+        if ($downloadName === '') {
+            $downloadName = basename($resolvedPath);
+        } elseif ($extension !== '' && pathinfo($downloadName, PATHINFO_EXTENSION) === '') {
+            $downloadName .= '.' . $extension;
+        }
+
+        return response()->download($resolvedPath, $downloadName);
+    }
+
+    public function exams()
+    {
+        $student = $this->getStudent();
+
+        $exams = Exam::whereHas('course.enrollments', function($query) use ($student) {
+            $query->where('student_id', $student->id);
+        })
+        ->with(['course', 'gradeScores' => function($query) use ($student) {
+            $query->where('student_id', $student->id);
+        }])
+        ->orderBy('exam_date', 'desc')
+        ->get();
+
+        return view('student.exams', compact('student', 'exams'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'zip_code' => 'nullable|string|max:20',
+            'emergency_contact' => 'nullable|string|max:200',
+        ]);
+
+        $student = $this->getStudent();
+        $student->update($request->only(['address', 'city', 'state', 'zip_code', 'emergency_contact']));
+
+        return redirect()->route('student.profile')->with('success', 'Profile updated successfully!');
     }
 }

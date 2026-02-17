@@ -41,15 +41,15 @@ class AuthenticatedSessionController extends Controller
     {
         switch ($user->role) {
             case 'admin':
-                return redirect()->intended('/admin/dashboard');
+                return redirect('/admin/dashboard');
             case 'teacher':
-                return redirect()->intended('/teacher/dashboard');
+                return redirect('/teacher/dashboard');
             case 'student':
-                return redirect()->intended('/student/dashboard');
+                return redirect('/student/dashboard');
             case 'parent':
-                return redirect()->intended('/parent/dashboard');
+                return redirect('/parent/dashboard');
             default:
-                return redirect()->intended('/');
+                return redirect('/');
         }
     }
 

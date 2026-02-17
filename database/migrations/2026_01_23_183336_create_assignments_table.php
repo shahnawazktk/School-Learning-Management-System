@@ -18,6 +18,8 @@ return new class extends Migration
             $table->date('due_date');
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade');
+            $table->integer('max_marks')->default(100);
+            $table->string('file_path')->nullable();
             $table->timestamps();
         });
     }

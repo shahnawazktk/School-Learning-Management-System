@@ -21,7 +21,7 @@ class RoleMiddleware
         }
 
         if (!in_array(Auth::user()->role, $roles)) {
-            abort(403, 'Unauthorized Access');
+            return redirect('/dashboard')->with('error', 'Unauthorized Access');
         }
 
         return $next($request);

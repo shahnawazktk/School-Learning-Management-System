@@ -1,236 +1,110 @@
 @extends('layouts.teacher.app')
+
 @section('content')
-    <div class="dashboard-title">
-        <h1><i class="fas fa-tachometer-alt"></i> Teacher Dashboard</h1>
-        <p>Welcome to your teaching dashboard - Manage classes, assignments, and student progress</p>
-    </div>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+<div class="container-fluid p-4">
     <!-- Welcome Banner -->
-    <div class="welcome-banner">
-        <div class="welcome-banner-content">
-            <h2>Welcome back, Ms. Johnson!</h2>
-            <p>You have 3 classes today, 15 assignments to grade, and 2 meetings scheduled.</p>
-        </div>
-        <div class="quick-stats">
-            <div class="quick-stat-item">
-                <div class="quick-stat-value">3</div>
-                <div class="quick-stat-label">Classes Today</div>
-            </div>
-            <div class="quick-stat-item">
-                <div class="quick-stat-value">15</div>
-                <div class="quick-stat-label">Assignments</div>
-            </div>
-            <div class="quick-stat-item">
-                <div class="quick-stat-value">42</div>
-                <div class="quick-stat-label">Students</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon" style="background-color: var(--primary-color);">
-                <i class="fas fa-chalkboard-teacher"></i>
-            </div>
-            <div class="stat-info">
-                <h3>4</h3>
-                <p>Active Classes</p>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 1 new this term
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon" style="background-color: var(--success-color);">
-                <i class="fas fa-user-graduate"></i>
-            </div>
-            <div class="stat-info">
-                <h3>42</h3>
-                <p>Total Students</p>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 3 new enrollments
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon" style="background-color: var(--warning-color);">
-                <i class="fas fa-tasks"></i>
-            </div>
-            <div class="stat-info">
-                <h3>15</h3>
-                <p>Pending Grading</p>
-                <div class="stat-change negative">
-                    <i class="fas fa-clock"></i> Due soon
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon" style="background-color: var(--info-color);">
-                <i class="fas fa-percentage"></i>
-            </div>
-            <div class="stat-info">
-                <h3>94%</h3>
-                <p>Avg. Attendance</p>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 2% increase
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white p-4">
+                    <h2 class="mb-2">Welcome back, {{ Auth::user()->name }}!</h2>
+                    <p class="mb-0 opacity-75">You have {{ $courses->count() }} courses and {{ $pendingSubmissions }} pending submissions to grade.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Core Features -->
-    <div class="section-title">
-        <h2><i class="fas fa-star"></i> Teaching Features</h2>
-        <a href="#" class="view-all-link">
-            View All Features <i class="fas fa-arrow-right"></i>
-        </a>
-    </div>
-    <div class="features-grid">
-        <!-- My Classes Card -->
-        <div class="feature-card">
-            <div class="feature-header">
-                <div class="feature-icon">
-                    <i class="fas fa-chalkboard-teacher"></i>
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h2 class="text-primary">{{ $courses->count() }}</h2>
+                    <p class="text-muted mb-0">Total Courses</p>
                 </div>
-                <div>
-                    <h3 class="feature-title">My Classes</h3>
-                    <p class="feature-description">View and manage your assigned classes, schedules, and
-                        class materials</p>
-                </div>
-            </div>
-            <div class="feature-actions">
-                <a href="{{ route('teachers.index') }}" class="btn btn-primary" data-page="myClasses">
-                    <i class="fas fa-eye"></i> View Classes
-                </a>
-                <button class="btn btn-outline" id="viewScheduleBtn">
-                    <i class="fas fa-calendar"></i> Schedule
-                </button>
             </div>
         </div>
-
-        <!-- Assignments Card -->
-        <div class="feature-card">
-            <div class="feature-header">
-                <div class="feature-icon">
-                    <i class="fas fa-tasks"></i>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h2 class="text-success">{{ $totalStudents }}</h2>
+                    <p class="text-muted mb-0">Total Students</p>
                 </div>
-                <div>
-                    <h3 class="feature-title">Assignments</h3>
-                    <p class="feature-description">Create, manage, and grade assignments for your students
-                    </p>
-                </div>
-            </div>
-            <div class="feature-actions">
-                <button class="btn btn-primary" data-page="assignments">
-                    <i class="fas fa-list"></i> View All
-                </button>
-                <button class="btn btn-success" id="createAssignmentBtn">
-                    <i class="fas fa-plus"></i> Create New
-                </button>
             </div>
         </div>
-
-        <!-- Students Card -->
-        <div class="feature-card">
-            <div class="feature-header">
-                <div class="feature-icon">
-                    <i class="fas fa-user-graduate"></i>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h2 class="text-warning">{{ $pendingSubmissions }}</h2>
+                    <p class="text-muted mb-0">Pending Grading</p>
                 </div>
-                <div>
-                    <h3 class="feature-title">My Students</h3>
-                    <p class="feature-description">View student profiles, track progress, and manage
-                        student data</p>
-                </div>
-            </div>
-            <div class="feature-actions">
-                <button class="btn btn-primary" data-page="students">
-                    <i class="fas fa-users"></i> View Students
-                </button>
-                <button class="btn btn-outline" id="studentReportsBtn">
-                    <i class="fas fa-chart-line"></i> Progress
-                </button>
             </div>
         </div>
-
-        <!-- Attendance Card -->
-        <div class="feature-card">
-            <div class="feature-header">
-                <div class="feature-icon">
-                    <i class="fas fa-calendar-check"></i>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h2 class="text-info">{{ $recentAssignments->count() }}</h2>
+                    <p class="text-muted mb-0">Recent Assignments</p>
                 </div>
-                <div>
-                    <h3 class="feature-title">Attendance</h3>
-                    <p class="feature-description">Mark and track student attendance for your classes</p>
-                </div>
-            </div>
-            <div class="feature-actions">
-                <button class="btn btn-primary" data-page="attendance">
-                    <i class="fas fa-check-circle"></i> Mark Attendance
-                </button>
-                <button class="btn btn-outline" id="attendanceReportBtn">
-                    <i class="fas fa-chart-bar"></i> Reports
-                </button>
-            </div>
-        </div>
-
-        <!-- Grades Card -->
-        <div class="feature-card">
-            <div class="feature-header">
-                <div class="feature-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div>
-                    <h3 class="feature-title">Grades & Results</h3>
-                    <p class="feature-description">Enter grades, calculate results, and generate reports
-                    </p>
-                </div>
-            </div>
-            <div class="feature-actions">
-                <button class="btn btn-primary" data-page="grades">
-                    <i class="fas fa-edit"></i> Enter Grades
-                </button>
-                <button class="btn btn-outline" id="resultsReportBtn">
-                    <i class="fas fa-download"></i> Export
-                </button>
-            </div>
-        </div>
-
-        <!-- Study Materials Card -->
-        <div class="feature-card">
-            <div class="feature-header">
-                <div class="feature-icon">
-                    <i class="fas fa-video"></i>
-                </div>
-                <div>
-                    <h3 class="feature-title">Study Materials</h3>
-                    <p class="feature-description">Upload and manage study materials, notes, and resources
-                    </p>
-                </div>
-            </div>
-            <div class="feature-actions">
-                <button class="btn btn-primary" data-page="studyMaterials">
-                    <i class="fas fa-folder-open"></i> Browse
-                </button>
-                <button class="btn btn-success" id="uploadMaterialBtn">
-                    <i class="fas fa-upload"></i> Upload
-                </button>
             </div>
         </div>
     </div>
 
-    <!-- Recent Activity -->
-    <div class="section-title">
-        <h2><i class="fas fa-history"></i> Today's Schedule</h2>
-    </div>
-
-    <div class="chart-container">
-        <h3>Class Performance Overview</h3>
-        <div class="chart-wrapper">
-            <canvas id="performanceChart"></canvas>
+    <!-- My Courses -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>My Courses</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @forelse($courses as $course)
+                            <div class="col-md-4 mb-3">
+                                <div class="card border">
+                                    <div class="card-body">
+                                        <h6>{{ $course->title }}</h6>
+                                        <p class="text-muted small mb-2">{{ $course->subject->name ?? 'N/A' }}</p>
+                                        <div class="d-flex justify-content-between">
+                                            <small><i class="fas fa-users me-1"></i>{{ $course->enrollments_count }} Students</small>
+                                            <small><i class="fas fa-tasks me-1"></i>{{ $course->assignments_count }} Assignments</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-muted text-center">No courses assigned</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Recent Assignments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Recent Assignments</h5>
+                </div>
+                <div class="card-body">
+                    @forelse($recentAssignments as $assignment)
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <h6 class="mb-1">{{ $assignment->title }}</h6>
+                                <small class="text-muted">{{ $assignment->course->title ?? 'N/A' }}</small>
+                            </div>
+                            <span class="badge bg-primary">Due: {{ $assignment->due_date->format('M d') }}</span>
+                        </div>
+                    @empty
+                        <p class="text-muted text-center">No recent assignments</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

@@ -1370,16 +1370,22 @@
 
         // Initialize Chart
         const initChart = () => {
-            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            const chartElement = document.getElementById('attendanceChart');
+            if (!chartElement) {
+                return null;
+            }
+
+            const labels = chartElement.dataset.labels ? JSON.parse(chartElement.dataset.labels) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const values = chartElement.dataset.values ? JSON.parse(chartElement.dataset.values) : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            const ctx = chartElement.getContext('2d');
+
             return new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov',
-                        'Dec'
-                    ],
+                    labels,
                     datasets: [{
                         label: 'Attendance Rate (%)',
-                        data: [92, 88, 95, 90, 87, 93, 89, 94, 91, 96, 90, 93],
+                        data: values,
                         backgroundColor: 'rgba(67, 97, 238, 0.7)',
                         borderColor: 'rgba(67, 97, 238, 1)',
                         borderWidth: 1
@@ -1424,10 +1430,19 @@
         // Set Active Menu Item
         menuItems.forEach(item => {
             item.addEventListener('click', function(e) {
-                e.preventDefault();
                 menuItems.forEach(i => i.classList.remove('active'));
                 this.classList.add('active');
-                updateContentTitle(this.querySelector('.menu-text').textContent);
+                const href = this.getAttribute('href');
+                const shouldStayOnPage = !href || href === '#' || href.startsWith('#');
+
+                if (shouldStayOnPage) {
+                    e.preventDefault();
+                }
+
+                const menuText = this.querySelector('.menu-text');
+                if (menuText) {
+                    updateContentTitle(menuText.textContent);
+                }
 
                 // Close sidebar on mobile after clicking menu item
                 if (window.innerWidth <= 576) {
@@ -1482,6 +1497,10 @@
                 }
             };
 
+            if (!contentTitle || !contentDesc) {
+                return;
+            }
+
             if (titles[menuText]) {
                 contentTitle.innerHTML = `<i class="fas ${titles[menuText].icon}"></i> ${menuText}`;
                 contentDesc.textContent = titles[menuText].desc;
@@ -1489,28 +1508,32 @@
         };
 
         // Notification Button
-        notificationBtn.addEventListener('click', () => {
-            alert(
-                'You have 3 new notifications:\n1. 2 new teacher applications\n2. 1 student transfer request\n3. Monthly report is ready'
-            );
-            notificationBtn.querySelector('.notification-badge').style.display = 'none';
-        });
+        if (notificationBtn) {
+            notificationBtn.addEventListener('click', () => {
+                const badge = notificationBtn.querySelector('.notification-badge');
+                if (badge) {
+                    badge.style.display = 'none';
+                }
+            });
+        }
 
         // User Dropdown Toggle
-        userDropdownToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            userDropdown.classList.toggle('active');
-        });
+        if (userDropdownToggle) {
+            userDropdownToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userDropdown.classList.toggle('active');
+            });
+        }
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            if (!userDropdown.contains(e.target)) {
+            if (userDropdown && !userDropdown.contains(e.target)) {
                 userDropdown.classList.remove('active');
             }
-            if (!schoolInfoModal.contains(e.target)) {
+            if (schoolInfoModal && !schoolInfoModal.contains(e.target)) {
                 schoolInfoModal.classList.remove('active');
             }
-            if (!addClassModal.contains(e.target)) {
+            if (addClassModal && !addClassModal.contains(e.target)) {
                 addClassModal.classList.remove('active');
             }
         });
@@ -1520,33 +1543,26 @@
             // School Info
             editSchoolInfoBtn: () => schoolInfoModal.classList.add('active'),
             viewSchoolSettingsBtn: () => schoolInfoModal.classList.add('active'),
-            schoolInfoMenu: () => schoolInfoModal.classList.add('active'),
 
             // Classes
             addClassBtn: () => addClassModal.classList.add('active'),
             viewClassesBtn: () => addClassModal.classList.add('active'),
-            classesMenu: () => addClassModal.classList.add('active'),
 
             // Subjects
             addSubjectBtn: () => alert('Add Subject feature would open here'),
             manageSubjectsBtn: () => alert('Manage Subjects interface would open here'),
-            subjectsMenu: () => alert('Subjects Management interface would open here'),
 
             // Teachers & Students
             addTeacherBtn: () => alert('Add Teacher form would open here'),
             addStudentBtn: () => alert('Add Student form would open here'),
-            teachersMenu: () => alert('Teachers Management interface would open here'),
-            studentsMenu: () => alert('Students Management interface would open here'),
 
             // Assignments
             assignTeacherBtn: () => alert('Assign Teacher to Class/Subject interface would open here'),
             viewAssignmentsBtn: () => alert('View Teacher Assignments interface would open here'),
-            assignmentsMenu: () => alert('Teacher Assignments interface would open here'),
 
             // Reports
             attendanceReportBtn: () => alert('Attendance Reports would be displayed here'),
             resultsReportBtn: () => alert('Results Reports would be displayed here'),
-            reportsMenu: () => alert('Reports Dashboard would open here'),
 
             // Modal Closes
             closeSchoolInfoModal: () => schoolInfoModal.classList.remove('active'),
@@ -1570,15 +1586,20 @@
         // Highlight Menu Function
         const highlightMenu = (menuId) => {
             menuItems.forEach(item => item.classList.remove('active'));
-            document.getElementById(menuId).classList.add('active');
+            const menuItem = document.getElementById(menuId);
+            if (menuItem) {
+                menuItem.classList.add('active');
+            }
         };
 
         // Close sidebar overlay click
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('expanded');
-            sidebarOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('expanded');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
 
         // Handle window resize
         let resizeTimeout;
@@ -1605,11 +1626,13 @@
         });
 
         // Toggle sidebar event
-        toggleSidebarBtn.addEventListener('click', toggleSidebar);
+        if (toggleSidebarBtn) {
+            toggleSidebarBtn.addEventListener('click', toggleSidebar);
+        }
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
-            const attendanceChart = initChart();
+            initChart();
 
             // Set initial state based on screen size
             if (window.innerWidth <= 1024) {
@@ -1626,9 +1649,13 @@
         });
     </script>
     <script>
-        document.getElementById('notificationBtn').addEventListener('click', function() {
-            document.getElementById('notificationDropdown').classList.toggle('show');
-        });
+        const notificationTrigger = document.getElementById('notificationBtn');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        if (notificationTrigger && notificationDropdown) {
+            notificationTrigger.addEventListener('click', function() {
+                notificationDropdown.classList.toggle('show');
+            });
+        }
     </script>
 
 

@@ -44,6 +44,9 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
 
 
 Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect('/dashboard');
+    }
     return view('welcome');
 });
 
@@ -52,15 +55,21 @@ require __DIR__.'/auth.php';
 
 // Role-based dashboards
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+    // Admin dashboard route is handled in the dedicated admin route group above.
 });
 
-Route::middleware(['auth', 'role:teacher'])->group(function () {
-    Route::get('/teacher/dashboard', function () {
-        return view('teacher.dashboard');
-    })->name('teacher.dashboard');
+Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
+    Route::get('/profile', [TeacherController::class, 'profile'])->name('profile');
+    Route::put('/profile', [TeacherController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/courses', [TeacherController::class, 'courses'])->name('courses');
+    Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
+    Route::get('/exams', [TeacherController::class, 'exams'])->name('exams');
+    Route::get('/attendance', [TeacherController::class, 'attendance'])->name('attendance');
+    Route::get('/submissions', [TeacherController::class, 'submissions'])->name('submissions');
+    
+    // Grading
+    Route::post('/submissions/{submission}/grade', [TeacherController::class, 'gradeSubmission'])->name('submissions.grade');
 });
 
 Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
@@ -70,17 +79,27 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::get('/attendance', [StudentController::class, 'attendance'])->name('attendance');
     Route::get('/results', [StudentController::class, 'results'])->name('results');
     Route::get('/resources', [StudentController::class, 'resources'])->name('resources');
+    Route::get('/exams', [StudentController::class, 'exams'])->name('exams');
     Route::get('/profile', [StudentController::class, 'profile'])->name('profile');
+    Route::put('/profile', [StudentController::class, 'updateProfile'])->name('profile.update');
 
     // API routes for AJAX functionality
     Route::post('/assignments/{assignment}/submit', [StudentController::class, 'submitAssignment'])->name('assignments.submit');
     Route::get('/resources/{resource}/download', [StudentController::class, 'downloadResource'])->name('resources.download');
 });
 
-Route::middleware(['auth', 'role:parent'])->group(function () {
-    Route::get('/parent/dashboard', function () {
-        return view('parent.dashboard');
-    })->name('parent.dashboard');
+Route::middleware(['auth', 'role:parent'])->prefix('parent')->name('parent.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\ParentController::class, 'dashboard'])->name('dashboard');
+    Route::get('/children', [App\Http\Controllers\ParentController::class, 'children'])->name('children');
+    Route::get('/children/{student}', [App\Http\Controllers\ParentController::class, 'childDetails'])->name('child.details');
+    Route::get('/children/{student}/attendance', [App\Http\Controllers\ParentController::class, 'attendance'])->name('child.attendance');
+    Route::get('/children/{student}/grades', [App\Http\Controllers\ParentController::class, 'grades'])->name('child.grades');
+    Route::get('/children/{student}/assignments', [App\Http\Controllers\ParentController::class, 'assignments'])->name('child.assignments');
+    Route::get('/children/{student}/exams', [App\Http\Controllers\ParentController::class, 'exams'])->name('child.exams');
+    Route::get('/profile', [App\Http\Controllers\ParentController::class, 'profile'])->name('profile');
+    Route::put('/profile', [App\Http\Controllers\ParentController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/notifications', [App\Http\Controllers\ParentController::class, 'notifications'])->name('notifications');
+    Route::get('/settings', [App\Http\Controllers\ParentController::class, 'settings'])->name('settings');
 });
 
 // Universal dashboard route that redirects based on user role

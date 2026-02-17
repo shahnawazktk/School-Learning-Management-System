@@ -15,6 +15,12 @@ class Assignment extends Model
         'due_date',
         'course_id',
         'teacher_id',
+        'max_marks',
+        'file_path',
+    ];
+
+    protected $casts = [
+        'due_date' => 'datetime',
     ];
 
     public function course()
@@ -30,5 +36,10 @@ class Assignment extends Model
     public function submissions()
     {
         return $this->hasMany(Submission::class);
+    }
+
+    public function enrollments()
+    {
+        return $this->hasManyThrough(Enrollment::class, Course::class, 'id', 'course_id', 'course_id', 'id');
     }
 }

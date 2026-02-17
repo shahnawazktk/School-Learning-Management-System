@@ -10,8 +10,29 @@ class Enrollment extends Model
     use HasFactory;
 
     protected $fillable = [
-        // Add fields based on migration if any
+        'student_id',
+        'course_id',
+        'subject_id',
+        'enrollment_date',
+        'status',
     ];
 
-    // Add relations if any
+    protected $casts = [
+        'enrollment_date' => 'date',
+    ];
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
 }

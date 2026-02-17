@@ -25,6 +25,10 @@ class shahnawaz extends Command
      */
     public function handle()
     {
-        //
+        $columns = \DB::select('DESCRIBE enrollments');
+        $this->info('Enrollments table columns:');
+        foreach ($columns as $column) {
+            $this->info($column->Field . ' - ' . $column->Type);
+        }
     }
 }

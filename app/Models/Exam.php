@@ -10,8 +10,28 @@ class Exam extends Model
     use HasFactory;
 
     protected $fillable = [
-        // Add fields based on migration if any
+        'title',
+        'description',
+        'course_id',
+        'exam_date',
+        'start_time',
+        'end_time',
+        'total_marks',
+        'type',
+        'status',
     ];
 
-    // Add relations if any
+    protected $casts = [
+        'exam_date' => 'date',
+    ];
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function gradeScores()
+    {
+        return $this->hasMany(GradeScore::class);
+    }
 }
