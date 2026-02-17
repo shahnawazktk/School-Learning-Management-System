@@ -77,6 +77,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
     Route::get('/assignments', [StudentController::class, 'assignments'])->name('assignments');
     Route::get('/attendance', [StudentController::class, 'attendance'])->name('attendance');
+    Route::post('/attendance/mark', [StudentController::class, 'markAttendance'])->name('attendance.mark');
     Route::get('/results', [StudentController::class, 'results'])->name('results');
     Route::get('/resources', [StudentController::class, 'resources'])->name('resources');
     Route::get('/exams', [StudentController::class, 'exams'])->name('exams');

@@ -15,9 +15,51 @@ use App\Models\Resource;
 use App\Models\Course;
 use App\Models\Subject;
 use App\Models\Exam;
+use Carbon\Carbon;
 
 class StudentController extends Controller
 {
+    private function attendanceMarkingPolicy(): array
+    {
+        return [
+            'window_start' => config('attendance.self_mark.window_start', '07:00'),
+            'window_end' => config('attendance.self_mark.window_end', '21:00'),
+            'allowed_ips' => config('attendance.self_mark.allowed_ips', []),
+        ];
+    }
+
+    private function attendanceEligibility(): array
+    {
+        $policy = $this->attendanceMarkingPolicy();
+        $now = now();
+        $start = now()->setTimeFromTimeString($policy['window_start']);
+        $end = now()->setTimeFromTimeString($policy['window_end']);
+
+        if ($end->lessThan($start)) {
+            $end->addDay();
+        }
+
+        if (!$now->between($start, $end)) {
+            return [
+                'allowed' => false,
+                'reason' => 'Attendance can be marked only between ' . $start->format('h:i A') . ' and ' . $end->format('h:i A') . '.',
+            ];
+        }
+
+        $allowedIps = collect($policy['allowed_ips'])
+            ->filter(fn ($ip) => is_string($ip) && trim($ip) !== '')
+            ->values();
+
+        if ($allowedIps->isNotEmpty() && !$allowedIps->contains(request()->ip())) {
+            return [
+                'allowed' => false,
+                'reason' => 'Attendance marking is restricted on this network.',
+            ];
+        }
+
+        return ['allowed' => true, 'reason' => null];
+    }
+
     private function getStudent()
     {
         $student = Student::where('user_id', Auth::id())->first();
@@ -262,30 +304,130 @@ class StudentController extends Controller
     public function attendance()
     {
         $student = $this->getStudent();
+        $attendanceEligibility = $this->attendanceEligibility();
+        $selectedMonth = request('month');
+        $selectedMonth = (is_string($selectedMonth) && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $selectedMonth))
+            ? $selectedMonth
+            : null;
 
-        $attendanceRecords = Attendance::where('student_id', $student->id)
-            ->with('course')
+        $enrolledCourses = Course::whereIn('id', Enrollment::where('student_id', $student->id)->pluck('course_id'))
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        $todayMarkedCourseIds = Attendance::where('student_id', $student->id)
+            ->whereDate('date', now()->toDateString())
+            ->pluck('course_id')
+            ->all();
+
+        $recordsQuery = Attendance::where('student_id', $student->id)->with('course');
+        $statsQuery = Attendance::where('student_id', $student->id);
+
+        if ($selectedMonth) {
+            [$year, $month] = explode('-', $selectedMonth);
+            $year = (int) $year;
+            $month = (int) $month;
+
+            $recordsQuery->whereYear('date', $year)->whereMonth('date', $month);
+            $statsQuery->whereYear('date', $year)->whereMonth('date', $month);
+        }
+
+        $attendanceRecords = $recordsQuery
             ->orderBy('date', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
-        $totalClasses = $attendanceRecords->count();
-        $presentClasses = $attendanceRecords->where('status', 'present')->count();
+        $totalClasses = (clone $statsQuery)->count();
+        $presentClasses = (clone $statsQuery)->where('status', 'present')->count();
+        $absentClasses = (clone $statsQuery)->where('status', 'absent')->count();
         $attendancePercentage = $totalClasses > 0 ? round(($presentClasses / $totalClasses) * 100, 1) : 0;
 
-        $monthlyAttendance = $attendanceRecords->groupBy(function($record) {
-            return $record->date->format('M Y');
-        })->map(function($monthRecords) {
-            $total = $monthRecords->count();
-            $present = $monthRecords->where('status', 'present')->count();
-            return $total > 0 ? round(($present / $total) * 100, 1) : 0;
-        });
+        $selectedMonthLabel = $selectedMonth
+            ? Carbon::createFromFormat('Y-m', $selectedMonth)->format('F Y')
+            : 'All Months';
+
+        $monthlyAttendance = Attendance::where('student_id', $student->id)
+            ->selectRaw("DATE_FORMAT(date, '%Y-%m') as month_key")
+            ->selectRaw("DATE_FORMAT(date, '%b %Y') as month_label")
+            ->selectRaw('COUNT(*) as total_classes')
+            ->selectRaw("SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present_classes")
+            ->selectRaw("SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent_classes")
+            ->selectRaw("SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late_classes")
+            ->selectRaw("SUM(CASE WHEN status = 'excused' THEN 1 ELSE 0 END) as excused_classes")
+            ->groupByRaw("DATE_FORMAT(date, '%Y-%m'), DATE_FORMAT(date, '%b %Y')")
+            ->orderBy('month_key', 'desc')
+            ->get()
+            ->map(function ($monthRow) {
+                $total = (int) $monthRow->total_classes;
+                $present = (int) $monthRow->present_classes;
+
+                return [
+                    'month_key' => $monthRow->month_key,
+                    'month_label' => $monthRow->month_label,
+                    'total_classes' => $total,
+                    'present_classes' => $present,
+                    'absent_classes' => (int) $monthRow->absent_classes,
+                    'late_classes' => (int) $monthRow->late_classes,
+                    'excused_classes' => (int) $monthRow->excused_classes,
+                    'attendance_percentage' => $total > 0 ? round(($present / $total) * 100, 1) : 0,
+                ];
+            });
 
         return view('student.attendance', compact(
             'student',
             'attendanceRecords',
             'attendancePercentage',
-            'monthlyAttendance'
+            'monthlyAttendance',
+            'enrolledCourses',
+            'todayMarkedCourseIds',
+            'attendanceEligibility',
+            'selectedMonth',
+            'selectedMonthLabel',
+            'totalClasses',
+            'presentClasses',
+            'absentClasses'
         ));
+    }
+
+    public function markAttendance(Request $request)
+    {
+        $student = $this->getStudent();
+        $attendanceEligibility = $this->attendanceEligibility();
+
+        if (!$attendanceEligibility['allowed']) {
+            return back()->with('error', $attendanceEligibility['reason']);
+        }
+
+        $validated = $request->validate([
+            'course_id' => 'required|integer|exists:courses,id',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        $isEnrolled = Enrollment::where('student_id', $student->id)
+            ->where('course_id', $validated['course_id'])
+            ->exists();
+
+        if (!$isEnrolled) {
+            return back()->with('error', 'You are not enrolled in the selected course.');
+        }
+
+        $alreadyMarked = Attendance::where('student_id', $student->id)
+            ->where('course_id', $validated['course_id'])
+            ->whereDate('date', now()->toDateString())
+            ->exists();
+
+        if ($alreadyMarked) {
+            return back()->with('error', 'Attendance already marked for this course today.');
+        }
+
+        Attendance::create([
+            'student_id' => $student->id,
+            'course_id' => $validated['course_id'],
+            'date' => now()->toDateString(),
+            'status' => 'present',
+            'remarks' => $validated['remarks'] ?? 'Self-marked by student (' . $request->ip() . ')',
+        ]);
+
+        return back()->with('success', 'Attendance marked successfully for today.');
     }
 
     public function results()
