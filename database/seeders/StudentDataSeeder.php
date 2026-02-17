@@ -14,6 +14,8 @@ use App\Models\Attendance;
 use App\Models\GradeScore;
 use App\Models\Resource;
 use App\Models\Exam;
+use App\Models\FeePayment;
+use App\Models\FeeTransaction;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -218,6 +220,70 @@ class StudentDataSeeder extends Seeder
                 ]
             );
         }
+
+        // Create sample fee records
+        $januaryFee = FeePayment::firstOrCreate(
+            [
+                'student_id' => $student->id,
+                'title' => 'Tuition Fee - January',
+            ],
+            [
+                'description' => 'Monthly tuition fee',
+                'amount' => 15000,
+                'paid_amount' => 15000,
+                'due_date' => now()->subMonth()->endOfMonth()->toDateString(),
+                'paid_at' => now()->subMonth()->endOfMonth(),
+                'status' => 'paid',
+                'payment_method' => 'Bank Transfer',
+                'receipt_number' => 'RCPT-JAN-' . $student->id,
+            ]
+        );
+
+        $februaryFee = FeePayment::firstOrCreate(
+            [
+                'student_id' => $student->id,
+                'title' => 'Tuition Fee - February',
+            ],
+            [
+                'description' => 'Monthly tuition fee',
+                'amount' => 15000,
+                'paid_amount' => 5000,
+                'due_date' => now()->endOfMonth()->toDateString(),
+                'status' => 'partial',
+                'payment_method' => 'Cash',
+                'receipt_number' => 'RCPT-FEB-' . $student->id,
+            ]
+        );
+
+        FeeTransaction::firstOrCreate(
+            [
+                'fee_payment_id' => $januaryFee->id,
+                'student_id' => $student->id,
+                'transaction_id' => 'BANK-JAN-' . $student->id,
+            ],
+            [
+                'amount' => 15000,
+                'payment_method' => 'bank_transfer',
+                'payer_account' => 'PK00ABCD0000000000000000',
+                'receipt_number' => 'RCPT-TXN-JAN-' . $student->id,
+                'paid_at' => now()->subMonth()->endOfMonth(),
+            ]
+        );
+
+        FeeTransaction::firstOrCreate(
+            [
+                'fee_payment_id' => $februaryFee->id,
+                'student_id' => $student->id,
+                'transaction_id' => 'EP-FEB-' . $student->id,
+            ],
+            [
+                'amount' => 5000,
+                'payment_method' => 'easypaisa',
+                'payer_account' => '03XX-XXXXXXX',
+                'receipt_number' => 'RCPT-TXN-FEB-' . $student->id,
+                'paid_at' => now()->startOfMonth()->addDays(5),
+            ]
+        );
     }
 
     private function calculateGrade($percentage)

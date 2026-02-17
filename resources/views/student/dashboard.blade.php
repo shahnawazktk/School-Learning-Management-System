@@ -38,6 +38,9 @@
                                 <a href="{{ route('student.resources') }}" class="btn btn-outline-light btn-sm fw-semibold">
                                     <i class="fas fa-folder-open me-1"></i>Resources
                                 </a>
+                                <a href="{{ route('student.fees') }}" class="btn btn-outline-light btn-sm fw-semibold">
+                                    <i class="fas fa-money-bill-wave me-1"></i>Fees
+                                </a>
                             </div>
                         </div>
                         <div class="col-lg-5 mt-4 mt-lg-0">
@@ -105,8 +108,28 @@
         <div class="col-md-3 col-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted d-block mb-2">Academic Score</small>
-                    <h4 class="fw-bold mb-0">{{ number_format($averageGrade, 1) }}%</h4>
+                    <small class="text-muted d-block mb-2">Outstanding Fee</small>
+                    <h4 class="fw-bold mb-0">Rs. {{ number_format($outstandingAmount, 2) }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-receipt text-primary me-2"></i>Fee Overview</h6>
+                        <small class="text-muted">
+                            Total: Rs. {{ number_format($totalFeeAmount, 2) }} |
+                            Paid: Rs. {{ number_format($totalPaidAmount, 2) }} |
+                            Pending Bills: {{ $dueFeesCount }}
+                        </small>
+                    </div>
+                    <a href="{{ route('student.fees') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i>Open Fee Management
+                    </a>
                 </div>
             </div>
         </div>

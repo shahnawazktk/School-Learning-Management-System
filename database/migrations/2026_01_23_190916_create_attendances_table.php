@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('attendances', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
-            $table->date('date');
-            $table->enum('status', ['present', 'absent', 'late', 'excused'])->default('present');
-            $table->text('remarks')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('attendances')) {
+            Schema::create('attendances', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+                $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
+                $table->date('date');
+                $table->enum('status', ['present', 'absent', 'late', 'excused'])->default('present');
+                $table->text('remarks')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void

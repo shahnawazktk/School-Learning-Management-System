@@ -17,6 +17,8 @@ use App\Models\Resource;
 use App\Models\Course;
 use App\Models\Subject;
 use App\Models\Exam;
+use App\Models\FeePayment;
+use App\Models\FeeTransaction;
 use Carbon\Carbon;
 
 class StudentController extends Controller
@@ -107,13 +109,25 @@ class StudentController extends Controller
         $grades = GradeScore::where('student_id', $student->id)->get();
         $averageGrade = $grades->avg('percentage') ?? 0;
 
+        $feeRecords = FeePayment::where('student_id', $student->id)->get();
+        $totalFeeAmount = (float) $feeRecords->sum('amount');
+        $totalPaidAmount = (float) $feeRecords->sum('paid_amount');
+        $outstandingAmount = max(0, $totalFeeAmount - $totalPaidAmount);
+        $dueFeesCount = $feeRecords->filter(function ($fee) {
+            return in_array((string) $fee->status, ['unpaid', 'partial', 'overdue'], true);
+        })->count();
+
         return view('student.dashboard', compact(
             'student',
             'enrollments',
             'pendingAssignments',
             'recentSubmissions',
             'attendancePercentage',
-            'averageGrade'
+            'averageGrade',
+            'totalFeeAmount',
+            'totalPaidAmount',
+            'outstandingAmount',
+            'dueFeesCount'
         ));
     }
 
@@ -840,6 +854,166 @@ class StudentController extends Controller
             ->get();
 
         return view('student.resources', compact('student', 'resources'));
+    }
+
+    public function fees(Request $request)
+    {
+        $student = $this->getStudent();
+        $status = strtolower(trim($request->string('status')->toString()));
+        $status = in_array($status, ['unpaid', 'partial', 'paid', 'overdue'], true) ? $status : '';
+
+        $fees = FeePayment::where('student_id', $student->id)
+            ->when($status !== '', function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->with(['transactions' => function ($query) {
+                $query->latest('paid_at');
+            }])
+            ->orderByRaw("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'unpaid' THEN 2 WHEN status = 'partial' THEN 3 ELSE 4 END")
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        $transactions = FeeTransaction::where('student_id', $student->id)
+            ->with('feePayment:id,title')
+            ->latest('paid_at')
+            ->latest('id')
+            ->take(20)
+            ->get();
+
+        $stats = [
+            'total_amount' => (float) $fees->sum('amount'),
+            'paid_amount' => (float) $fees->sum('paid_amount'),
+            'outstanding_amount' => max(0, (float) $fees->sum('amount') - (float) $fees->sum('paid_amount')),
+            'overdue_count' => $fees->where('status', 'overdue')->count(),
+            'pending_count' => $fees->whereIn('status', ['unpaid', 'partial', 'overdue'])->count(),
+        ];
+
+        $paymentChannels = collect(config('fees.channels', []))
+            ->filter(function ($channel, $key) {
+                return in_array((string) $key, ['easypaisa', 'jazzcash', 'bank_transfer'], true) && is_array($channel);
+            })
+            ->map(function ($channel, $key) {
+                return array_merge([
+                    'key' => (string) $key,
+                    'label' => ucfirst(str_replace('_', ' ', (string) $key)),
+                    'icon' => 'fas fa-money-bill-wave',
+                    'icon_color' => 'text-primary',
+                    'line1' => '',
+                    'line2' => '',
+                ], $channel);
+            })
+            ->values();
+
+        $paymentMethods = $paymentChannels
+            ->pluck('label', 'key')
+            ->toArray();
+
+        return view('student.fees', compact('student', 'fees', 'transactions', 'stats', 'status', 'paymentMethods', 'paymentChannels'));
+    }
+
+    public function payFee(Request $request, int $feePayment)
+    {
+        $student = $this->getStudent();
+        $fee = FeePayment::where('id', $feePayment)
+            ->where('student_id', $student->id)
+            ->firstOrFail();
+
+        $remainingBeforePayment = max((float) $fee->amount - (float) $fee->paid_amount, 0);
+        if ($remainingBeforePayment <= 0) {
+            return back()->with('error', 'This fee has already been paid.');
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:1|max:' . $remainingBeforePayment,
+            'payment_method' => 'required|in:easypaisa,jazzcash,bank_transfer',
+            'transaction_id' => 'required|string|max:120',
+            'payer_account' => 'nullable|string|max:120',
+            'notes' => 'nullable|string|max:500',
+            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        $proofPath = null;
+        if ($request->hasFile('payment_proof')) {
+            $proofPath = $request->file('payment_proof')->store('fee-proofs', 'public');
+        }
+
+        $paidAmount = (float) $validated['amount'];
+        $now = now();
+        $receiptNumber = $this->generateFeeReceiptNumber($student->id);
+
+        FeeTransaction::create([
+            'fee_payment_id' => $fee->id,
+            'student_id' => $student->id,
+            'amount' => $paidAmount,
+            'payment_method' => $validated['payment_method'],
+            'transaction_id' => (string) $validated['transaction_id'],
+            'payer_account' => $validated['payer_account'] ?? null,
+            'proof_path' => $proofPath,
+            'notes' => $validated['notes'] ?? null,
+            'receipt_number' => $receiptNumber,
+            'paid_at' => $now,
+        ]);
+
+        $newPaidAmount = (float) $fee->paid_amount + $paidAmount;
+        $fee->paid_amount = min($newPaidAmount, (float) $fee->amount);
+        $fee->payment_method = $validated['payment_method'];
+
+        $isFullyPaid = $fee->paid_amount >= (float) $fee->amount;
+        if ($isFullyPaid) {
+            $fee->status = 'paid';
+            $fee->paid_at = $now;
+            $fee->receipt_number = $receiptNumber;
+        } else {
+            $fee->status = ($fee->due_date && $fee->due_date->isPast()) ? 'overdue' : 'partial';
+            $fee->paid_at = null;
+        }
+
+        $fee->remarks = $validated['notes'] ?? $fee->remarks;
+        $fee->save();
+
+        return back()->with('success', 'Fee payment submitted successfully. Receipt No: ' . $receiptNumber);
+    }
+
+    public function feeReceipt(int $transaction)
+    {
+        $student = $this->getStudent();
+        $feeTransaction = FeeTransaction::where('id', $transaction)
+            ->where('student_id', $student->id)
+            ->with('feePayment')
+            ->firstOrFail();
+
+        return view('student.fee-receipt', [
+            'student' => $student,
+            'transaction' => $feeTransaction,
+            'fee' => $feeTransaction->feePayment,
+        ]);
+    }
+
+    public function downloadFeeReceipt(int $transaction)
+    {
+        $student = $this->getStudent();
+        $feeTransaction = FeeTransaction::where('id', $transaction)
+            ->where('student_id', $student->id)
+            ->with('feePayment')
+            ->firstOrFail();
+
+        $pdf = Pdf::loadView('student.fee-receipt-pdf', [
+            'student' => $student,
+            'transaction' => $feeTransaction,
+            'fee' => $feeTransaction->feePayment,
+        ])->setPaper('a4', 'portrait');
+
+        $fileName = 'fee-receipt-' . $feeTransaction->receipt_number . '.pdf';
+        return $pdf->download($fileName);
+    }
+
+    private function generateFeeReceiptNumber(int $studentId): string
+    {
+        do {
+            $candidate = 'RCPT-' . $studentId . '-' . now()->format('YmdHis') . '-' . random_int(100, 999);
+        } while (FeeTransaction::where('receipt_number', $candidate)->exists());
+
+        return $candidate;
     }
 
     public function profile()

@@ -88,6 +88,10 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::post('/assignments/reminders/send', [StudentController::class, 'sendAssignmentReminders'])->name('assignments.reminders.send');
     Route::get('/attendance', [StudentController::class, 'attendance'])->name('attendance');
     Route::post('/attendance/mark', [StudentController::class, 'markAttendance'])->name('attendance.mark');
+    Route::get('/fees', [StudentController::class, 'fees'])->name('fees');
+    Route::post('/fees/{feePayment}/pay', [StudentController::class, 'payFee'])->name('fees.pay');
+    Route::get('/fees/transactions/{transaction}/receipt', [StudentController::class, 'feeReceipt'])->name('fees.receipt');
+    Route::get('/fees/transactions/{transaction}/receipt/download', [StudentController::class, 'downloadFeeReceipt'])->name('fees.receipt.download');
     Route::get('/results', [StudentController::class, 'results'])->name('results');
     Route::get('/results/card', [StudentController::class, 'resultCard'])->name('results.card');
     Route::get('/results/card/download', [StudentController::class, 'downloadResultCard'])->name('results.card.download');

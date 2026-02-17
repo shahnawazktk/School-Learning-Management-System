@@ -61,4 +61,14 @@ class Student extends Model
     {
         return $this->hasMany(GradeScore::class);
     }
+
+    public function feePayments()
+    {
+        return $this->hasMany(FeePayment::class);
+    }
+
+    public function feeTransactions()
+    {
+        return $this->hasMany(FeeTransaction::class);
+    }
 }

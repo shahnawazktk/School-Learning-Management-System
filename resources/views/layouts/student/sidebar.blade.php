@@ -45,6 +45,9 @@
                 <a href="{{ route('student.attendance') }}" class="menu-link d-flex align-items-center {{ request()->routeIs('student.attendance') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check me-2"></i><span class="sidebar-label">Attendance</span>
                 </a>
+                <a href="{{ route('student.fees') }}" class="menu-link d-flex align-items-center {{ request()->routeIs('student.fees') ? 'active' : '' }}">
+                    <i class="fas fa-money-bill-wave me-2"></i><span class="sidebar-label">Fees</span>
+                </a>
                 <a href="{{ route('student.results') }}" class="menu-link d-flex align-items-center {{ request()->routeIs('student.results') ? 'active' : '' }}">
                     <i class="fas fa-chart-line me-2"></i><span class="sidebar-label">Results</span>
                 </a>
@@ -106,6 +109,9 @@
             </a>
             <a href="{{ route('student.attendance') }}" class="menu-link d-flex align-items-center {{ request()->routeIs('student.attendance') ? 'active' : '' }}">
                 <i class="fas fa-calendar-check me-2"></i><span class="sidebar-label">Attendance</span>
+            </a>
+            <a href="{{ route('student.fees') }}" class="menu-link d-flex align-items-center {{ request()->routeIs('student.fees') ? 'active' : '' }}">
+                <i class="fas fa-money-bill-wave me-2"></i><span class="sidebar-label">Fees</span>
             </a>
             <a href="{{ route('student.results') }}" class="menu-link d-flex align-items-center {{ request()->routeIs('student.results') ? 'active' : '' }}">
                 <i class="fas fa-chart-line me-2"></i><span class="sidebar-label">Results</span>
