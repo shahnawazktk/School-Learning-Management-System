@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Assignment;
@@ -430,17 +431,82 @@ class StudentController extends Controller
         return back()->with('success', 'Attendance marked successfully for today.');
     }
 
-    public function results()
+    public function results(Request $request)
     {
         $student = $this->getStudent();
+        $resultData = $this->buildResultsData($student, $request);
 
-        $grades = GradeScore::where('student_id', $student->id)
-            ->with(['course', 'assignment', 'exam'])
+        return view('student.results', [
+            'student' => $student,
+            ...$resultData,
+        ]);
+    }
+
+    public function resultCard(Request $request)
+    {
+        $student = $this->getStudent();
+        $resultData = $this->buildResultsData($student, $request);
+
+        return view('student.result-card', [
+            'student' => $student,
+            'isDownload' => false,
+            ...$resultData,
+        ]);
+    }
+
+    public function downloadResultCard(Request $request)
+    {
+        $student = $this->getStudent();
+        $resultData = $this->buildResultsData($student, $request);
+        $fileName = 'result-card-' . $student->id . '-' . now()->format('Ymd-His') . '.pdf';
+
+        $pdf = Pdf::loadView('student.result-card-pdf', [
+            'student' => $student,
+            ...$resultData,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download($fileName);
+    }
+
+    private function buildResultsData(Student $student, Request $request): array
+    {
+        $gradesQuery = GradeScore::where('student_id', $student->id)
+            ->with(['course', 'assignment', 'exam']);
+
+        $courseId = $request->integer('course_id');
+        $type = $request->string('type')->toString();
+        $type = in_array($type, ['assignment', 'exam'], true) ? $type : '';
+
+        if ($courseId > 0) {
+            $gradesQuery->where('course_id', $courseId);
+        }
+
+        if ($type === 'assignment') {
+            $gradesQuery->whereNotNull('assignment_id');
+        } elseif ($type === 'exam') {
+            $gradesQuery->whereNotNull('exam_id');
+        }
+
+        $grades = $gradesQuery
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $courseIds = GradeScore::where('student_id', $student->id)
+            ->whereNotNull('course_id')
+            ->distinct()
+            ->pluck('course_id');
+
+        $courses = Course::whereIn('id', $courseIds)
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
         $averagePercentage = $grades->avg('percentage') ?? 0;
         $totalSubjects = $grades->unique('course_id')->count();
+        $passRate = $grades->count() > 0
+            ? ($grades->where('percentage', '>=', 40)->count() / $grades->count()) * 100
+            : 0;
+        $highestPercentage = $grades->max('percentage') ?? 0;
+        $lowestPercentage = $grades->min('percentage') ?? 0;
 
         $gradeDistribution = [
             'A+' => $grades->where('grade', 'A+')->count(),
@@ -453,13 +519,18 @@ class StudentController extends Controller
             'F' => $grades->where('grade', 'F')->count(),
         ];
 
-        return view('student.results', compact(
-            'student',
+        return compact(
             'grades',
+            'courses',
+            'courseId',
+            'type',
             'averagePercentage',
             'totalSubjects',
-            'gradeDistribution'
-        ));
+            'gradeDistribution',
+            'passRate',
+            'highestPercentage',
+            'lowestPercentage'
+        );
     }
 
     public function resources()
