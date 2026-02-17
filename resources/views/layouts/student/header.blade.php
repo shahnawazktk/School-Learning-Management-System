@@ -33,7 +33,11 @@
         <a href="{{ route('student.profile') }}" class="text-decoration-none">
             <div class="d-flex align-items-center gap-2 p-1 pe-2 rounded border bg-white">
                 <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                    {{ strtoupper(substr(Auth::user()->name ?? 'ST', 0, 2)) }}
+                    @if(!empty($student->profile_image))
+                        <img src="{{ asset('storage/' . $student->profile_image) }}" alt="Profile" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+                    @else
+                        {{ strtoupper(substr(Auth::user()->name ?? 'ST', 0, 2)) }}
+                    @endif
                 </div>
                 <div class="d-none d-md-block">
                     <div class="small fw-semibold text-dark lh-1">{{ Auth::user()->name ?? 'Student' }}</div>

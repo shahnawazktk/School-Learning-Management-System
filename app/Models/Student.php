@@ -23,6 +23,7 @@ class Student extends Model
         'zip_code',
         'country',
         'emergency_contact',
+        'profile_image',
         'status',
     ];
 

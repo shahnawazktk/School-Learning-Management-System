@@ -1,107 +1,218 @@
 @extends('layouts.student.app')
 
+@push('styles')
+<style>
+    .profile-hero {
+        background: linear-gradient(120deg, #0d6efd, #0dcaf0);
+        color: #fff;
+        border: 0;
+    }
+
+    .profile-avatar {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        overflow: hidden;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .info-label {
+        color: #667085;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+        margin-bottom: .2rem;
+    }
+</style>
+@endpush
+
 @section('content')
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<div class="container-fluid p-4">
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
-                        <i class="fas fa-user fa-3x text-primary"></i>
+<div class="container-fluid p-0">
+    <div class="card profile-hero shadow-sm mb-4">
+        <div class="card-body p-4 p-lg-5">
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <div class="profile-avatar">
+                        @if(!empty($student->profile_image))
+                            <img src="{{ asset('storage/' . $student->profile_image) }}" alt="Profile image">
+                        @else
+                            {{ strtoupper(substr($user->name ?? 'ST', 0, 2)) }}
+                        @endif
                     </div>
-                    <h4>{{ $user->name }}</h4>
-                    <p class="text-muted">{{ $student->student_id }}</p>
-                    <span class="badge bg-success">{{ ucfirst($student->status) }}</span>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-md-8 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Personal Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <small class="text-muted">Full Name</small>
-                            <p class="mb-0"><strong>{{ $user->name }}</strong></p>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Email</small>
-                            <p class="mb-0"><strong>{{ $user->email }}</strong></p>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <small class="text-muted">Student ID</small>
-                            <p class="mb-0"><strong>{{ $student->student_id }}</strong></p>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Class</small>
-                            <p class="mb-0"><strong>{{ $student->class }} - {{ $student->section }}</strong></p>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <small class="text-muted">Roll Number</small>
-                            <p class="mb-0"><strong>{{ $student->roll_number }}</strong></p>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Academic Year</small>
-                            <p class="mb-0"><strong>{{ $student->academic_year }}</strong></p>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <small class="text-muted">Date of Birth</small>
-                            <p class="mb-0"><strong>{{ $student->date_of_birth ? $student->date_of_birth->format('M d, Y') : 'N/A' }}</strong></p>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Gender</small>
-                            <p class="mb-0"><strong>{{ ucfirst($student->gender ?? 'N/A') }}</strong></p>
-                        </div>
+                <div class="col">
+                    <h3 class="mb-1 fw-bold">{{ $user->name }}</h3>
+                    <p class="mb-2 opacity-75">{{ $user->email }}</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge text-bg-light">Student ID: {{ $student->student_id ?? 'N/A' }}</span>
+                        <span class="badge text-bg-light">Class: {{ $student->class ?? 'N/A' }} - {{ $student->section ?? 'N/A' }}</span>
+                        <span class="badge text-bg-light">Status: {{ ucfirst($student->status ?? 'N/A') }}</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0 ps-3">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="row g-4">
+        <div class="col-xl-4">
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Contact Information</h5>
+                    <h5 class="mb-0">Academic Profile</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <small class="text-muted">Address</small>
-                            <p class="mb-0"><strong>{{ $student->address ?? 'N/A' }}</strong></p>
+                    <div class="mb-3">
+                        <div class="info-label">Roll Number</div>
+                        <div class="fw-semibold">{{ $student->roll_number ?? 'N/A' }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="info-label">Academic Year</div>
+                        <div class="fw-semibold">{{ $student->academic_year ?? 'N/A' }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="info-label">Date of Birth</div>
+                        <div class="fw-semibold">
+                            {{ $student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->format('M d, Y') : 'N/A' }}
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <small class="text-muted">City</small>
-                            <p class="mb-0"><strong>{{ $student->city ?? 'N/A' }}</strong></p>
-                        </div>
-                        <div class="col-md-4">
-                            <small class="text-muted">State</small>
-                            <p class="mb-0"><strong>{{ $student->state ?? 'N/A' }}</strong></p>
-                        </div>
-                        <div class="col-md-4">
-                            <small class="text-muted">Zip Code</small>
-                            <p class="mb-0"><strong>{{ $student->zip_code ?? 'N/A' }}</strong></p>
-                        </div>
+                    <div class="mb-0">
+                        <div class="info-label">Gender</div>
+                        <div class="fw-semibold">{{ $student->gender ? ucfirst($student->gender) : 'N/A' }}</div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <small class="text-muted">Emergency Contact</small>
-                            <p class="mb-0"><strong>{{ $student->emergency_contact ?? 'N/A' }}</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Contact & Address Information</h5>
+                    <span class="badge text-bg-primary">Editable</span>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ route('student.profile.update') }}" enctype="multipart/form-data">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="profile_image" class="form-label">Profile Image</label>
+                                <input
+                                    type="file"
+                                    id="profile_image"
+                                    name="profile_image"
+                                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                                    class="form-control @error('profile_image') is-invalid @enderror">
+                                <div class="form-text">Allowed: JPG, PNG, WEBP. Max size 2MB.</div>
+                                @error('profile_image')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label for="address" class="form-label">Address</label>
+                                <textarea
+                                    id="address"
+                                    name="address"
+                                    class="form-control @error('address') is-invalid @enderror"
+                                    rows="3"
+                                    placeholder="House no, street, area">{{ old('address', $student->address) }}</textarea>
+                                @error('address')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="city" class="form-label">City</label>
+                                <input
+                                    type="text"
+                                    id="city"
+                                    name="city"
+                                    class="form-control @error('city') is-invalid @enderror"
+                                    value="{{ old('city', $student->city) }}"
+                                    placeholder="City">
+                                @error('city')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="state" class="form-label">State</label>
+                                <input
+                                    type="text"
+                                    id="state"
+                                    name="state"
+                                    class="form-control @error('state') is-invalid @enderror"
+                                    value="{{ old('state', $student->state) }}"
+                                    placeholder="State">
+                                @error('state')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="zip_code" class="form-label">Zip Code</label>
+                                <input
+                                    type="text"
+                                    id="zip_code"
+                                    name="zip_code"
+                                    class="form-control @error('zip_code') is-invalid @enderror"
+                                    value="{{ old('zip_code', $student->zip_code) }}"
+                                    placeholder="Zip Code">
+                                @error('zip_code')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                                <input
+                                    type="text"
+                                    id="emergency_contact"
+                                    name="emergency_contact"
+                                    class="form-control @error('emergency_contact') is-invalid @enderror"
+                                    value="{{ old('emergency_contact', $student->emergency_contact) }}"
+                                    placeholder="Name and phone number">
+                                @error('emergency_contact')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
-                    </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

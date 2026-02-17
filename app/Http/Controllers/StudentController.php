@@ -1264,10 +1264,21 @@ class StudentController extends Controller
             'state' => 'nullable|string|max:100',
             'zip_code' => 'nullable|string|max:20',
             'emergency_contact' => 'nullable|string|max:200',
+            'profile_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $student = $this->getStudent();
-        $student->update($request->only(['address', 'city', 'state', 'zip_code', 'emergency_contact']));
+        $payload = $request->only(['address', 'city', 'state', 'zip_code', 'emergency_contact']);
+
+        if ($request->hasFile('profile_image')) {
+            if (!empty($student->profile_image)) {
+                Storage::disk('public')->delete($student->profile_image);
+            }
+
+            $payload['profile_image'] = $request->file('profile_image')->store('students/profiles', 'public');
+        }
+
+        $student->update($payload);
 
         return redirect()->route('student.profile')->with('success', 'Profile updated successfully!');
     }

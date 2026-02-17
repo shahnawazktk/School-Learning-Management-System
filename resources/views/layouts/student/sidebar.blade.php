@@ -16,7 +16,11 @@
             <div class="p-3 border-bottom">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
-                        {{ $studentInitials }}
+                        @if(!empty($student->profile_image))
+                            <img src="{{ asset('storage/' . $student->profile_image) }}" alt="Profile" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover;">
+                        @else
+                            {{ $studentInitials }}
+                        @endif
                     </div>
                     <div>
                         <div class="fw-semibold">{{ $studentName }}</div>
@@ -74,7 +78,11 @@
         <div class="p-3 border-bottom">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px;">
-                    {{ $studentInitials }}
+                    @if(!empty($student->profile_image))
+                        <img src="{{ asset('storage/' . $student->profile_image) }}" alt="Profile" style="width: 46px; height: 46px; border-radius: 50%; object-fit: cover;">
+                    @else
+                        {{ $studentInitials }}
+                    @endif
                 </div>
                 <div class="student-profile-meta">
                     <div class="fw-semibold text-truncate">{{ $studentName }}</div>
