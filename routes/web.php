@@ -83,6 +83,10 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::get('/results/card/download', [StudentController::class, 'downloadResultCard'])->name('results.card.download');
     Route::get('/resources', [StudentController::class, 'resources'])->name('resources');
     Route::get('/exams', [StudentController::class, 'exams'])->name('exams');
+    Route::get('/exams/export', [StudentController::class, 'downloadExamSchedule'])->name('exams.export');
+    Route::get('/exams/calendar.ics', [StudentController::class, 'downloadExamCalendar'])->name('exams.calendar');
+    Route::get('/exams/{exam}/admit-card', [StudentController::class, 'examAdmitCard'])->name('exams.admit-card');
+    Route::get('/exams/{exam}/admit-card/download', [StudentController::class, 'downloadExamAdmitCard'])->name('exams.admit-card.download');
     Route::get('/profile', [StudentController::class, 'profile'])->name('profile');
     Route::put('/profile', [StudentController::class, 'updateProfile'])->name('profile.update');
 

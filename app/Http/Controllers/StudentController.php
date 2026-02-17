@@ -658,17 +658,270 @@ class StudentController extends Controller
     public function exams()
     {
         $student = $this->getStudent();
+        $examData = $this->buildExamData($student, request());
 
-        $exams = Exam::whereHas('course.enrollments', function($query) use ($student) {
-            $query->where('student_id', $student->id);
-        })
-        ->with(['course', 'gradeScores' => function($query) use ($student) {
-            $query->where('student_id', $student->id);
-        }])
-        ->orderBy('exam_date', 'desc')
-        ->get();
+        return view('student.exams', [
+            'student' => $student,
+            ...$examData,
+        ]);
+    }
 
-        return view('student.exams', compact('student', 'exams'));
+    public function downloadExamSchedule(Request $request)
+    {
+        $student = $this->getStudent();
+        $examData = $this->buildExamData($student, $request);
+        $exams = $examData['exams'];
+        $fileName = 'exam-schedule-' . $student->id . '-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($exams) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Exam Title',
+                'Course',
+                'Exam Date',
+                'Start Time',
+                'End Time',
+                'Type',
+                'Status',
+                'Marks Obtained',
+                'Total Marks',
+                'Grade',
+                'Percentage',
+            ]);
+
+            foreach ($exams as $exam) {
+                $gradeScore = $exam->gradeScores->first();
+
+                fputcsv($handle, [
+                    (string) $exam->title,
+                    (string) ($exam->course->title ?? 'N/A'),
+                    optional($exam->exam_date)->format('Y-m-d') ?? 'N/A',
+                    $exam->start_time ? date('h:i A', strtotime($exam->start_time)) : 'N/A',
+                    $exam->end_time ? date('h:i A', strtotime($exam->end_time)) : 'N/A',
+                    ucfirst((string) ($exam->type ?? 'n/a')),
+                    ucfirst((string) ($exam->status ?? 'n/a')),
+                    $gradeScore ? $gradeScore->marks_obtained : 'N/A',
+                    $gradeScore ? $gradeScore->total_marks : 'N/A',
+                    $gradeScore ? $gradeScore->grade : 'N/A',
+                    $gradeScore ? number_format((float) $gradeScore->percentage, 1) . '%' : 'N/A',
+                ]);
+            }
+
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function downloadExamCalendar(Request $request)
+    {
+        $student = $this->getStudent();
+        $examData = $this->buildExamData($student, $request);
+        $exams = $examData['exams'];
+        $fileName = 'exam-calendar-' . $student->id . '-' . now()->format('Ymd-His') . '.ics';
+
+        return response()->streamDownload(function () use ($exams) {
+            echo "BEGIN:VCALENDAR\r\n";
+            echo "VERSION:2.0\r\n";
+            echo "PRODID:-//LMS//Student Exam Calendar//EN\r\n";
+            echo "CALSCALE:GREGORIAN\r\n";
+            echo "METHOD:PUBLISH\r\n";
+
+            foreach ($exams as $exam) {
+                $start = $this->examDateTime($exam->exam_date, $exam->start_time, '00:00');
+                $end = $this->examDateTime($exam->exam_date, $exam->end_time, '23:59');
+
+                if (!$start || !$end) {
+                    continue;
+                }
+
+                $uid = 'exam-' . $exam->id . '-student-' . auth()->id() . '@lms.local';
+                $title = $this->escapeIcsText((string) $exam->title);
+                $courseTitle = $this->escapeIcsText((string) ($exam->course->title ?? 'N/A'));
+                $description = $this->escapeIcsText((string) ($exam->description ?? ''));
+                $status = $this->escapeIcsText(ucfirst((string) ($exam->status ?? 'Unknown')));
+
+                echo "BEGIN:VEVENT\r\n";
+                echo "UID:{$uid}\r\n";
+                echo "DTSTAMP:" . now()->utc()->format('Ymd\THis\Z') . "\r\n";
+                echo "DTSTART:" . $start->utc()->format('Ymd\THis\Z') . "\r\n";
+                echo "DTEND:" . $end->utc()->format('Ymd\THis\Z') . "\r\n";
+                echo "SUMMARY:{$title}\r\n";
+                echo "DESCRIPTION:Course: {$courseTitle}\\nStatus: {$status}\\n{$description}\r\n";
+                echo "STATUS:CONFIRMED\r\n";
+                echo "END:VEVENT\r\n";
+            }
+
+            echo "END:VCALENDAR\r\n";
+        }, $fileName, [
+            'Content-Type' => 'text/calendar; charset=UTF-8',
+        ]);
+    }
+
+    public function examAdmitCard(int $exam)
+    {
+        $student = $this->getStudent();
+        $examRecord = $this->resolveStudentExam($exam, $student);
+        $gradeScore = $examRecord->gradeScores->first();
+
+        return view('student.exam-admit-card', [
+            'student' => $student,
+            'exam' => $examRecord,
+            'gradeScore' => $gradeScore,
+        ]);
+    }
+
+    public function downloadExamAdmitCard(int $exam)
+    {
+        $student = $this->getStudent();
+        $examRecord = $this->resolveStudentExam($exam, $student);
+        $gradeScore = $examRecord->gradeScores->first();
+        $fileName = 'admit-card-exam-' . $examRecord->id . '-' . now()->format('Ymd-His') . '.pdf';
+
+        $pdf = Pdf::loadView('student.exam-admit-card-pdf', [
+            'student' => $student,
+            'exam' => $examRecord,
+            'gradeScore' => $gradeScore,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download($fileName);
+    }
+
+    private function buildExamData(Student $student, Request $request): array
+    {
+        $baseQuery = Exam::query()
+            ->whereHas('course.enrollments', function ($query) use ($student) {
+                $query->where('student_id', $student->id);
+            })
+            ->with([
+                'course',
+                'gradeScores' => function ($query) use ($student) {
+                    $query->where('student_id', $student->id);
+                }
+            ]);
+
+        $q = trim($request->string('q')->toString());
+        $status = strtolower(trim($request->string('status')->toString()));
+        $type = strtolower(trim($request->string('type')->toString()));
+        $sort = strtolower(trim($request->string('sort')->toString()));
+        $sort = in_array($sort, ['upcoming', 'latest', 'oldest'], true) ? $sort : 'upcoming';
+
+        $statusOptions = (clone $baseQuery)
+            ->select('status')
+            ->distinct()
+            ->pluck('status')
+            ->filter()
+            ->values();
+
+        $typeOptions = (clone $baseQuery)
+            ->select('type')
+            ->distinct()
+            ->pluck('type')
+            ->filter()
+            ->values();
+
+        $query = clone $baseQuery;
+
+        if ($q !== '') {
+            $query->where(function ($inner) use ($q) {
+                $inner->where('title', 'like', '%' . $q . '%')
+                    ->orWhere('description', 'like', '%' . $q . '%')
+                    ->orWhereHas('course', function ($courseQuery) use ($q) {
+                        $courseQuery->where('title', 'like', '%' . $q . '%');
+                    });
+            });
+        }
+
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
+        if ($type !== '') {
+            $query->where('type', $type);
+        }
+
+        $exams = $query->get();
+
+        $today = now()->startOfDay();
+
+        if ($sort === 'latest') {
+            $exams = $exams->sortByDesc(fn ($exam) => optional($exam->exam_date)->timestamp ?? 0)->values();
+        } elseif ($sort === 'oldest') {
+            $exams = $exams->sortBy(fn ($exam) => optional($exam->exam_date)->timestamp ?? PHP_INT_MAX)->values();
+        } else {
+            $exams = $exams->sortBy(function ($exam) use ($today) {
+                $date = $exam->exam_date;
+                $isPast = !$date || $date->lt($today);
+                $timestamp = $date ? $date->timestamp : PHP_INT_MAX;
+                return [$isPast ? 1 : 0, $timestamp];
+            })->values();
+        }
+
+        $upcomingCount = $exams->filter(function ($exam) use ($today) {
+            return $exam->exam_date && $exam->exam_date->gte($today) && $exam->status !== 'cancelled';
+        })->count();
+
+        $completedCount = $exams->where('status', 'completed')->count();
+        $gradedCount = $exams->filter(fn ($exam) => $exam->gradeScores->isNotEmpty())->count();
+        $avgScore = $exams->flatMap->gradeScores->avg('percentage') ?? 0;
+
+        $nextExam = $exams->first(function ($exam) use ($today) {
+            return $exam->exam_date && $exam->exam_date->gte($today) && $exam->status !== 'cancelled';
+        });
+
+        return compact(
+            'exams',
+            'q',
+            'status',
+            'type',
+            'sort',
+            'statusOptions',
+            'typeOptions',
+            'upcomingCount',
+            'completedCount',
+            'gradedCount',
+            'avgScore',
+            'nextExam'
+        );
+    }
+
+    private function resolveStudentExam(int $examId, Student $student): Exam
+    {
+        return Exam::query()
+            ->where('id', $examId)
+            ->whereHas('course.enrollments', function ($query) use ($student) {
+                $query->where('student_id', $student->id);
+            })
+            ->with([
+                'course',
+                'gradeScores' => function ($query) use ($student) {
+                    $query->where('student_id', $student->id);
+                }
+            ])
+            ->firstOrFail();
+    }
+
+    private function examDateTime($examDate, ?string $time, string $fallbackTime): ?Carbon
+    {
+        if (!$examDate) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($examDate->format('Y-m-d') . ' ' . ($time ?: $fallbackTime), config('app.timezone'));
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function escapeIcsText(string $value): string
+    {
+        return str_replace(
+            ['\\', ';', ',', "\r\n", "\n", "\r"],
+            ['\\\\', '\;', '\,', '\\n', '\\n', '\\n'],
+            $value
+        );
     }
 
     public function updateProfile(Request $request)
