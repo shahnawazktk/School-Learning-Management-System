@@ -10,8 +10,15 @@ class ParentModel extends Model
 
     protected $fillable = [
         'user_id',
+        'parent_id',
+        'relationship',
+        'occupation',
         'phone',
         'address',
+        'city',
+        'state',
+        'zip_code',
+        'emergency_contact',
     ];
 
     public function user()

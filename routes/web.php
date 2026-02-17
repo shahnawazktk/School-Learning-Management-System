@@ -6,6 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Frontend\FrontendController;
 // use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
@@ -15,7 +16,9 @@ use App\Http\Controllers\Frontend\FrontendController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
-Route::resource('teachers', TeacherController::class);
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::resource('teachers', TeacherController::class);
+});
 
 Route::post('/admin/notifications/read', function () {
     auth()->user()->unreadNotifications->markAsRead();
@@ -32,8 +35,10 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
     Route::get('/profile', [AdminController::class, 'profile'])->name('admin.profile');
     Route::put('/profile', [AdminController::class, 'updateProfile'])->name('admin.profile.update');
 
-    Route::get('/users', [AdminController::class, 'users'])
+    Route::get('/users', [AdminUserController::class, 'index'])
         ->name('admin.users');
+    Route::post('/users', [AdminUserController::class, 'store'])
+        ->name('admin.users.store');
 
     Route::get('/settings', [AdminController::class, 'settings'])
         ->name('admin.settings');

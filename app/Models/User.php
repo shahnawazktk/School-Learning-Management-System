@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\ParentModel;
 
 class User extends Authenticatable
 {
@@ -18,11 +19,11 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'role',
-];
+        'name',
+        'email',
+        'password',
+        'role',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -47,16 +48,16 @@ class User extends Authenticatable
         ];
     }
     protected static function booted()
-{
-    static::created(function ($user) {
-        $admin = User::where('role', 'admin')->first();
-        if ($admin) {
-            $admin->notify(
-                new \App\Notifications\AdminNotification('New user registered')
-            );
-        }
-    });
-}
+    {
+        static::created(function ($user) {
+            $admin = User::where('role', 'admin')->first();
+            if ($admin) {
+                $admin->notify(
+                    new \App\Notifications\AdminNotification('New user registered')
+                );
+            }
+        });
+    }
 
     // Relationships
     public function admin()
@@ -76,7 +77,12 @@ class User extends Authenticatable
 
     public function parent()
     {
-        return $this->hasOne(Parent::class);
+        return $this->hasOne(ParentModel::class, 'user_id');
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array($this->role, $roles, true);
     }
 
     public function courses()

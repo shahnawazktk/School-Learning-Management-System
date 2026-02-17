@@ -2034,6 +2034,10 @@
 
         // Update sidebar state based on screen size
         function updateSidebarState() {
+            if (!sidebar || !mainContent) {
+                return;
+            }
+
             if (window.innerWidth <= 1024) {
                 sidebar.classList.remove('collapsed');
                 sidebar.classList.remove('active');
@@ -2048,6 +2052,10 @@
         function setupEventListeners() {
             // Toggle sidebar function
             const toggleSidebar = () => {
+                if (!sidebar || !sidebarOverlay || !mainContent) {
+                    return;
+                }
+
                 const isMobile = window.innerWidth <= 1024;
 
                 if (isMobile) {
@@ -2061,22 +2069,32 @@
             };
 
             // Toggle sidebar buttons
-            toggleSidebarBtn.addEventListener('click', toggleSidebar);
+            if (toggleSidebarBtn) {
+                toggleSidebarBtn.addEventListener('click', toggleSidebar);
+            }
 
             // Close sidebar overlay click
-            sidebarOverlay.addEventListener('click', () => {
-                sidebar.classList.remove('active');
-                sidebarOverlay.classList.remove('active');
-                document.body.style.overflow = '';
-            });
+            if (sidebarOverlay && sidebar) {
+                sidebarOverlay.addEventListener('click', () => {
+                    sidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            }
 
             // Notification button
-            notificationBtn.addEventListener('click', function() {
-                showNotification(
-                    'You have 5 notifications:\n- 2 new study materials\n- 1 assignment graded\n- 1 attendance update\n- 1 message from teacher',
-                    'info');
-                this.querySelector('.notification-badge').style.display = 'none';
-            });
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', function() {
+                    showNotification(
+                        'You have 5 notifications:\n- 2 new study materials\n- 1 assignment graded\n- 1 attendance update\n- 1 message from teacher',
+                        'info');
+
+                    const badge = this.querySelector('.notification-badge');
+                    if (badge) {
+                        badge.style.display = 'none';
+                    }
+                });
+            }
 
             // Menu navigation removed - using normal Laravel routing
 
@@ -2095,110 +2113,152 @@
             });
 
             // Close modals
-            closeAssignmentModal.addEventListener('click', function() {
-                assignmentModal.classList.remove('active');
-            });
+            if (closeAssignmentModal && assignmentModal) {
+                closeAssignmentModal.addEventListener('click', function() {
+                    assignmentModal.classList.remove('active');
+                });
+            }
 
-            closeMaterialModal.addEventListener('click', function() {
-                materialModal.classList.remove('active');
-            });
+            if (closeMaterialModal && materialModal) {
+                closeMaterialModal.addEventListener('click', function() {
+                    materialModal.classList.remove('active');
+                });
+            }
 
             // File upload handling
-            fileUploadArea.addEventListener('click', function() {
-                assignmentFileInput.click();
-            });
+            if (fileUploadArea && assignmentFileInput) {
+                fileUploadArea.addEventListener('click', function() {
+                    assignmentFileInput.click();
+                });
+            }
 
-            assignmentFileInput.addEventListener('change', function() {
-                if (this.files.length > 0) {
-                    const file = this.files[0];
-                    const fileName = file.name;
-                    const fileSize = (file.size / (1024 * 1024)).toFixed(2); // Convert to MB
+            if (assignmentFileInput && selectedFileContainer) {
+                assignmentFileInput.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        const file = this.files[0];
+                        const fileName = file.name;
+                        const fileSize = (file.size / (1024 * 1024)).toFixed(2); // Convert to MB
+                        const selectedFileName = document.getElementById('selectedFileName');
+                        const selectedFileSize = document.getElementById('selectedFileSize');
 
-                    document.getElementById('selectedFileName').textContent = fileName;
-                    document.getElementById('selectedFileSize').textContent = `${fileSize} MB`;
-                    selectedFileContainer.style.display = 'block';
+                        if (selectedFileName) {
+                            selectedFileName.textContent = fileName;
+                        }
 
-                    // Validate file size
-                    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                        showNotification('File size exceeds 10MB limit. Please choose a smaller file.', 'error');
-                        this.value = '';
-                        selectedFileContainer.style.display = 'none';
+                        if (selectedFileSize) {
+                            selectedFileSize.textContent = `${fileSize} MB`;
+                        }
+
+                        selectedFileContainer.style.display = 'block';
+
+                        // Validate file size
+                        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                            showNotification('File size exceeds 10MB limit. Please choose a smaller file.', 'error');
+                            this.value = '';
+                            selectedFileContainer.style.display = 'none';
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // Remove selected file
-            document.getElementById('removeFileBtn').addEventListener('click', function() {
-                assignmentFileInput.value = '';
-                selectedFileContainer.style.display = 'none';
-            });
-
-            // Submit assignment
-            submitAssignmentBtn.addEventListener('click', function() {
-                if (!assignmentFileInput.files.length) {
-                    showNotification('Please select a file to upload.', 'error');
-                    return;
-                }
-
-                // Simulate submission
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-                this.disabled = true;
-
-                setTimeout(() => {
-                    showNotification('Assignment submitted successfully!', 'success');
-                    assignmentModal.classList.remove('active');
+            const removeFileBtn = document.getElementById('removeFileBtn');
+            if (removeFileBtn && assignmentFileInput && selectedFileContainer) {
+                removeFileBtn.addEventListener('click', function() {
                     assignmentFileInput.value = '';
                     selectedFileContainer.style.display = 'none';
-                    document.getElementById('assignmentComments').value = '';
+                });
+            }
 
-                    this.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assignment';
-                    this.disabled = false;
+            // Submit assignment
+            if (submitAssignmentBtn && assignmentFileInput && assignmentModal && selectedFileContainer) {
+                submitAssignmentBtn.addEventListener('click', function() {
+                    if (!assignmentFileInput.files.length) {
+                        showNotification('Please select a file to upload.', 'error');
+                        return;
+                    }
 
-                    // Update assignments list
-                    loadAssignments();
-                }, 1500);
-            });
+                    // Simulate submission
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                    this.disabled = true;
+
+                    setTimeout(() => {
+                        showNotification('Assignment submitted successfully!', 'success');
+                        assignmentModal.classList.remove('active');
+                        assignmentFileInput.value = '';
+                        selectedFileContainer.style.display = 'none';
+                        const assignmentComments = document.getElementById('assignmentComments');
+                        if (assignmentComments) {
+                            assignmentComments.value = '';
+                        }
+
+                        this.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assignment';
+                        this.disabled = false;
+
+                        // Update assignments list
+                        loadAssignments();
+                    }, 1500);
+                });
+            }
 
             // Play material button
-            playMaterialBtn.addEventListener('click', function() {
-                showNotification('Video playback started in fullscreen mode.', 'info');
-            });
+            if (playMaterialBtn) {
+                playMaterialBtn.addEventListener('click', function() {
+                    showNotification('Video playback started in fullscreen mode.', 'info');
+                });
+            }
 
             // Download material button
-            downloadMaterialBtn.addEventListener('click', function() {
-                showNotification('Download started. The file will be saved to your device.', 'success');
-            });
+            if (downloadMaterialBtn) {
+                downloadMaterialBtn.addEventListener('click', function() {
+                    showNotification('Download started. The file will be saved to your device.', 'success');
+                });
+            }
 
             // Close modals when clicking outside
             window.addEventListener('click', function(e) {
-                if (e.target === assignmentModal) {
+                if (assignmentModal && e.target === assignmentModal) {
                     assignmentModal.classList.remove('active');
                 }
-                if (e.target === materialModal) {
+                if (materialModal && e.target === materialModal) {
                     materialModal.classList.remove('active');
                 }
             });
 
             // Filter change listeners
-            document.getElementById('subjectFilter').addEventListener('change', loadSubjects);
-            document.getElementById('assignmentFilter').addEventListener('change', loadAssignments);
-            document.getElementById('attendancePeriod').addEventListener('change', loadAttendanceTable);
-            document.getElementById('resultsTerm').addEventListener('change', loadResultsTable);
+            const subjectFilter = document.getElementById('subjectFilter');
+            const assignmentFilter = document.getElementById('assignmentFilter');
+            const attendancePeriod = document.getElementById('attendancePeriod');
+            const resultsTerm = document.getElementById('resultsTerm');
+
+            if (subjectFilter) subjectFilter.addEventListener('change', loadSubjects);
+            if (assignmentFilter) assignmentFilter.addEventListener('change', loadAssignments);
+            if (attendancePeriod) attendancePeriod.addEventListener('change', loadAttendanceTable);
+            if (resultsTerm) resultsTerm.addEventListener('change', loadResultsTable);
 
             // Edit profile button
-            document.getElementById('editProfileBtn').addEventListener('click', function() {
-                showNotification('Profile editing feature would open here.', 'info');
-            });
+            const editProfileBtn = document.getElementById('editProfileBtn');
+            if (editProfileBtn) {
+                editProfileBtn.addEventListener('click', function() {
+                    showNotification('Profile editing feature would open here.', 'info');
+                });
+            }
 
             // View assignment calendar button
-            document.getElementById('viewAssignmentCalendarBtn').addEventListener('click', function() {
-                showNotification('Calendar view would open here showing all assignment deadlines.', 'info');
-            });
+            const viewAssignmentCalendarBtn = document.getElementById('viewAssignmentCalendarBtn');
+            if (viewAssignmentCalendarBtn) {
+                viewAssignmentCalendarBtn.addEventListener('click', function() {
+                    showNotification('Calendar view would open here showing all assignment deadlines.', 'info');
+                });
+            }
 
             // Close material button
-            document.getElementById('closeMaterialBtn').addEventListener('click', function() {
-                materialModal.classList.remove('active');
-            });
+            const closeMaterialBtn = document.getElementById('closeMaterialBtn');
+            if (closeMaterialBtn && materialModal) {
+                closeMaterialBtn.addEventListener('click', function() {
+                    materialModal.classList.remove('active');
+                });
+            }
 
             // Handle window resize
             let resizeTimeout;
@@ -2208,7 +2268,7 @@
                     updateSidebarState();
 
                     // Close mobile sidebar if resizing to desktop
-                    if (window.innerWidth > 1024) {
+                    if (window.innerWidth > 1024 && sidebar && sidebarOverlay) {
                         sidebar.classList.remove('active');
                         sidebarOverlay.classList.remove('active');
                         document.body.style.overflow = '';

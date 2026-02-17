@@ -22,8 +22,3 @@ $middleware->alias([
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
- // Route middleware aliases
-        $middleware->alias([
-            'auth' => \App\Http\Middleware\Authenticate::class,
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
-        ]);
