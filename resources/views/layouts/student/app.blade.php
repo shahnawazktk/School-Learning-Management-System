@@ -2025,11 +2025,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Student Panel initialized with fixed layout");
 
-            // Set up event listeners
-            setupEventListeners();
+            try {
+                // Set up event listeners
+                setupEventListeners();
 
-            // Set initial sidebar state based on screen size
-            updateSidebarState();
+                // Set initial sidebar state based on screen size
+                updateSidebarState();
+            } catch (error) {
+                console.error('Student dashboard initialization failed:', error);
+            }
         });
 
         // Update sidebar state based on screen size
@@ -2279,13 +2283,21 @@
 
         // Show a specific page
         function showPage(page) {
+            if (!pageTitle || !pageContents || pageContents.length === 0) {
+                return;
+            }
+
             // Hide all page contents
             pageContents.forEach(content => {
                 content.style.display = 'none';
             });
 
             // Show the selected page
-            document.getElementById(`${page}Page`).style.display = 'block';
+            const selectedPage = document.getElementById(`${page}Page`);
+            if (!selectedPage) {
+                return;
+            }
+            selectedPage.style.display = 'block';
 
             // Update page title
             const pageTitles = {
@@ -2307,7 +2319,11 @@
         // Load subjects into the subjects page
         function loadSubjects() {
             const subjectsContainer = document.getElementById('subjectsContainer');
-            const filter = document.getElementById('subjectFilter').value;
+            const subjectFilter = document.getElementById('subjectFilter');
+            if (!subjectsContainer || !subjectFilter) {
+                return;
+            }
+            const filter = subjectFilter.value;
 
             // Clear container
             subjectsContainer.innerHTML = '';
@@ -2388,7 +2404,11 @@
         // Load assignments into the assignments page
         function loadAssignments() {
             const assignmentsContainer = document.getElementById('assignmentsContainer');
-            const filter = document.getElementById('assignmentFilter').value;
+            const assignmentFilter = document.getElementById('assignmentFilter');
+            if (!assignmentsContainer || !assignmentFilter) {
+                return;
+            }
+            const filter = assignmentFilter.value;
 
             // Clear container
             assignmentsContainer.innerHTML = '';
@@ -2496,6 +2516,9 @@
         // Load attendance table
         function loadAttendanceTable() {
             const tableBody = document.getElementById('attendanceTableBody');
+            if (!tableBody) {
+                return;
+            }
             tableBody.innerHTML = '';
 
             attendanceData.forEach(record => {
@@ -2516,6 +2539,9 @@
         // Load results table
         function loadResultsTable() {
             const tableBody = document.getElementById('resultsTableBody');
+            if (!tableBody) {
+                return;
+            }
             tableBody.innerHTML = '';
 
             resultsData.forEach(result => {
@@ -2536,7 +2562,11 @@
         // Initialize charts
         function initializeCharts() {
             // Dashboard attendance chart
-            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+            const attendanceCanvas = document.getElementById('attendanceChart');
+            if (!attendanceCanvas || typeof Chart === 'undefined') {
+                return;
+            }
+            const attendanceCtx = attendanceCanvas.getContext('2d');
             new Chart(attendanceCtx, {
                 type: 'line',
                 data: {
@@ -2570,8 +2600,10 @@
             });
 
             // Attendance by subject chart
-            const attendanceBySubjectCtx = document.getElementById('attendanceBySubjectChart').getContext('2d');
-            new Chart(attendanceBySubjectCtx, {
+            const attendanceBySubjectCanvas = document.getElementById('attendanceBySubjectChart');
+            if (attendanceBySubjectCanvas) {
+                const attendanceBySubjectCtx = attendanceBySubjectCanvas.getContext('2d');
+                new Chart(attendanceBySubjectCtx, {
                 type: 'bar',
                 data: {
                     labels: ['Mathematics', 'Science', 'English', 'History', 'Computer', 'PE'],
@@ -2613,10 +2645,13 @@
                     }
                 }
             });
+            }
 
             // Results chart
-            const resultsCtx = document.getElementById('resultsChart').getContext('2d');
-            new Chart(resultsCtx, {
+            const resultsCanvas = document.getElementById('resultsChart');
+            if (resultsCanvas) {
+                const resultsCtx = resultsCanvas.getContext('2d');
+                new Chart(resultsCtx, {
                 type: 'radar',
                 data: {
                     labels: ['Mathematics', 'Science', 'English', 'History', 'Computer', 'PE'],
@@ -2658,35 +2693,57 @@
                     }
                 }
             });
+            }
         }
 
         // Open assignment submission modal
         function openAssignmentModal(id, title, subject, dueDate) {
-            document.getElementById('modalAssignmentTitle').textContent = title;
-            document.getElementById('modalAssignmentSubject').textContent = `Subject: ${subject}`;
-            document.getElementById('modalAssignmentDeadline').textContent = `Deadline: ${dueDate}`;
+            if (!assignmentModal) {
+                return;
+            }
+
+            const modalAssignmentTitle = document.getElementById('modalAssignmentTitle');
+            const modalAssignmentSubject = document.getElementById('modalAssignmentSubject');
+            const modalAssignmentDeadline = document.getElementById('modalAssignmentDeadline');
+
+            if (modalAssignmentTitle) modalAssignmentTitle.textContent = title;
+            if (modalAssignmentSubject) modalAssignmentSubject.textContent = `Subject: ${subject}`;
+            if (modalAssignmentDeadline) modalAssignmentDeadline.textContent = `Deadline: ${dueDate}`;
 
             assignmentModal.classList.add('active');
         }
 
         // Open study material modal
         function openMaterialModal(subject, type, title) {
-            document.getElementById('modalMaterialTitle').textContent = title;
-            document.getElementById('modalMaterialSubject').textContent = `Subject: ${subject}`;
-            document.getElementById('modalMaterialType').textContent =
-                `Type: ${type === 'video' ? 'Video Lesson' : 'Study Notes'}`;
+            if (!materialModal) {
+                return;
+            }
+
+            const modalMaterialTitle = document.getElementById('modalMaterialTitle');
+            const modalMaterialSubject = document.getElementById('modalMaterialSubject');
+            const modalMaterialType = document.getElementById('modalMaterialType');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const documentViewer = document.getElementById('documentViewer');
+            const modalMaterialDuration = document.getElementById('modalMaterialDuration');
+            const playBtn = document.getElementById('playMaterialBtn');
+
+            if (modalMaterialTitle) modalMaterialTitle.textContent = title;
+            if (modalMaterialSubject) modalMaterialSubject.textContent = `Subject: ${subject}`;
+            if (modalMaterialType) {
+                modalMaterialType.textContent = `Type: ${type === 'video' ? 'Video Lesson' : 'Study Notes'}`;
+            }
 
             // Show appropriate content based on type
             if (type === 'video') {
-                document.getElementById('videoPlayer').style.display = 'block';
-                document.getElementById('documentViewer').style.display = 'none';
-                document.getElementById('playMaterialBtn').style.display = 'inline-flex';
-                document.getElementById('modalMaterialDuration').textContent = 'Duration: 15 minutes';
+                if (videoPlayer) videoPlayer.style.display = 'block';
+                if (documentViewer) documentViewer.style.display = 'none';
+                if (playBtn) playBtn.style.display = 'inline-flex';
+                if (modalMaterialDuration) modalMaterialDuration.textContent = 'Duration: 15 minutes';
             } else {
-                document.getElementById('videoPlayer').style.display = 'none';
-                document.getElementById('documentViewer').style.display = 'block';
-                document.getElementById('playMaterialBtn').style.display = 'none';
-                document.getElementById('modalMaterialDuration').textContent = 'Pages: 12';
+                if (videoPlayer) videoPlayer.style.display = 'none';
+                if (documentViewer) documentViewer.style.display = 'block';
+                if (playBtn) playBtn.style.display = 'none';
+                if (modalMaterialDuration) modalMaterialDuration.textContent = 'Pages: 12';
             }
 
             materialModal.classList.add('active');
@@ -2762,13 +2819,19 @@
 
         // Logout function
         function logout() {
+            if (!studentDashboard || !loginPage) {
+                return;
+            }
+
             if (confirm('Are you sure you want to log out?')) {
                 studentDashboard.style.display = 'none';
                 loginPage.style.display = 'flex';
 
                 // Reset form
-                document.getElementById('studentId').value = '';
-                document.getElementById('password').value = '';
+                const studentId = document.getElementById('studentId');
+                const password = document.getElementById('password');
+                if (studentId) studentId.value = '';
+                if (password) password.value = '';
 
                 showNotification('You have been logged out successfully.', 'info');
             }

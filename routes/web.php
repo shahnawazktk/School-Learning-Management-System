@@ -103,6 +103,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     // API routes for AJAX functionality
     Route::post('/assignments/{assignment}/submit', [StudentController::class, 'submitAssignment'])->name('assignments.submit');
     Route::get('/resources/{resource}/download', [StudentController::class, 'downloadResource'])->name('resources.download');
+    Route::get('/resources/{resource}/stream', [StudentController::class, 'streamResource'])->name('resources.stream');
 });
 
 Route::middleware(['auth', 'role:parent'])->prefix('parent')->name('parent.')->group(function () {

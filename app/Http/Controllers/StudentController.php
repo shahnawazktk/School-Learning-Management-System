@@ -906,33 +906,11 @@ class StudentController extends Controller
         $resource = Resource::findOrFail($resourceId);
         $student = $this->getStudent();
 
-        $hasAccess = Enrollment::where('student_id', $student->id)
-            ->where('course_id', $resource->course_id)
-            ->exists();
-
-        if (!$hasAccess) {
+        if (!$this->studentCanAccessResource($student->id, $resource->course_id)) {
             abort(403, 'You do not have access to this resource.');
         }
 
-        $rawPath = trim((string) $resource->file_path);
-        $normalizedPath = ltrim(str_replace('\\', '/', $rawPath), '/');
-
-        if (str_starts_with($normalizedPath, 'storage/')) {
-            $normalizedPath = substr($normalizedPath, 8);
-        }
-
-        $candidatePaths = [
-            Storage::disk('public')->path($normalizedPath),
-            storage_path('app/public/' . $normalizedPath),
-            storage_path('app/' . $normalizedPath),
-            public_path($normalizedPath),
-            public_path('storage/' . $normalizedPath),
-            base_path($normalizedPath),
-        ];
-
-        $resolvedPath = collect($candidatePaths)->first(function ($path) {
-            return is_string($path) && is_file($path);
-        });
+        $resolvedPath = $this->resolveResourceFilePath((string) $resource->file_path);
 
         if (!$resolvedPath) {
             abort(404, 'Resource file not found on server. Please contact administrator.');
@@ -948,6 +926,65 @@ class StudentController extends Controller
         }
 
         return response()->download($resolvedPath, $downloadName);
+    }
+
+    public function streamResource($resourceId)
+    {
+        $resource = Resource::findOrFail($resourceId);
+        $student = $this->getStudent();
+
+        if (!$this->studentCanAccessResource($student->id, $resource->course_id)) {
+            abort(403, 'You do not have access to this resource.');
+        }
+
+        $rawPath = trim((string) $resource->file_path);
+
+        if (filter_var($rawPath, FILTER_VALIDATE_URL)) {
+            return redirect()->away($rawPath);
+        }
+
+        $resolvedPath = $this->resolveResourceFilePath($rawPath);
+
+        if (!$resolvedPath) {
+            abort(404, 'Video file not found on server. Please contact administrator.');
+        }
+
+        $mimeType = @mime_content_type($resolvedPath) ?: 'application/octet-stream';
+        $inlineName = basename($resolvedPath);
+
+        return response()->file($resolvedPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $inlineName . '"',
+        ]);
+    }
+
+    private function studentCanAccessResource(int $studentId, int $courseId): bool
+    {
+        return Enrollment::where('student_id', $studentId)
+            ->where('course_id', $courseId)
+            ->exists();
+    }
+
+    private function resolveResourceFilePath(string $rawPath): ?string
+    {
+        $normalizedPath = ltrim(str_replace('\\', '/', trim($rawPath)), '/');
+
+        if (str_starts_with($normalizedPath, 'storage/')) {
+            $normalizedPath = substr($normalizedPath, 8);
+        }
+
+        $candidatePaths = [
+            Storage::disk('public')->path($normalizedPath),
+            storage_path('app/public/' . $normalizedPath),
+            storage_path('app/' . $normalizedPath),
+            public_path($normalizedPath),
+            public_path('storage/' . $normalizedPath),
+            base_path($normalizedPath),
+        ];
+
+        return collect($candidatePaths)->first(function ($path) {
+            return is_string($path) && is_file($path);
+        });
     }
 
     public function exams()

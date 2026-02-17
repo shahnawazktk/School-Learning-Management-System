@@ -1207,21 +1207,29 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Teacher Dashboard loaded successfully");
 
-            // Initialize chart
-            initializeChart();
+            try {
+                // Initialize chart
+                initializeChart();
 
-            // Set up event listeners
-            setupEventListeners();
+                // Set up event listeners
+                setupEventListeners();
 
-            // Set initial sidebar state based on screen size
-            updateSidebarState();
+                // Set initial sidebar state based on screen size
+                updateSidebarState();
 
-            // Update teacher info
-            updateTeacherInfo();
+                // Update teacher info
+                updateTeacherInfo();
+            } catch (error) {
+                console.error('Teacher dashboard initialization failed:', error);
+            }
         });
 
         // Update sidebar state based on screen size
         function updateSidebarState() {
+            if (!sidebar || !mainContent) {
+                return;
+            }
+
             if (window.innerWidth <= 1024) {
                 sidebar.classList.remove('collapsed');
                 sidebar.classList.remove('active');
@@ -1234,13 +1242,21 @@
 
         // Update teacher information
         function updateTeacherInfo() {
-            document.querySelector('.teacher-info-sidebar h3').textContent = teacherData.name;
-            document.querySelector('.teacher-info-header h4').textContent = teacherData.name;
+            const sidebarName = document.querySelector('.teacher-info-sidebar h3');
+            const headerName = document.querySelector('.teacher-info-header h4');
+
+            if (sidebarName) sidebarName.textContent = teacherData.name;
+            if (headerName) headerName.textContent = teacherData.name;
         }
 
         // Initialize chart
         function initializeChart() {
-            const ctx = document.getElementById('performanceChart').getContext('2d');
+            const chartCanvas = document.getElementById('performanceChart');
+            if (!chartCanvas || typeof Chart === 'undefined') {
+                return;
+            }
+
+            const ctx = chartCanvas.getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1283,6 +1299,10 @@
         function setupEventListeners() {
             // Toggle sidebar function
             const toggleSidebar = () => {
+                if (!sidebar || !sidebarOverlay || !mainContent) {
+                    return;
+                }
+
                 const isMobile = window.innerWidth <= 1024;
 
                 if (isMobile) {
@@ -1296,14 +1316,18 @@
             };
 
             // Toggle sidebar button
-            toggleSidebarBtn.addEventListener('click', toggleSidebar);
+            if (toggleSidebarBtn) {
+                toggleSidebarBtn.addEventListener('click', toggleSidebar);
+            }
 
             // Close sidebar overlay click
-            sidebarOverlay.addEventListener('click', () => {
-                sidebar.classList.remove('active');
-                sidebarOverlay.classList.remove('active');
-                document.body.style.overflow = '';
-            });
+            if (sidebarOverlay && sidebar) {
+                sidebarOverlay.addEventListener('click', () => {
+                    sidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            }
 
             // Menu navigation - FIXED VERSION
             menuItems.forEach(item => {
@@ -1332,7 +1356,9 @@
                         iconHTML = iconElement.outerHTML;
                     }
 
-                    pageTitle.innerHTML = `${iconHTML} ${menuText}`;
+                    if (pageTitle) {
+                        pageTitle.innerHTML = `${iconHTML} ${menuText}`;
+                    }
 
                     // Show notification for demo
                     if (page !== 'dashboard') {
@@ -1341,8 +1367,8 @@
 
                     // Close sidebar on mobile after clicking
                     if (window.innerWidth <= 1024) {
-                        sidebar.classList.remove('active');
-                        sidebarOverlay.classList.remove('active');
+                        if (sidebar) sidebar.classList.remove('active');
+                        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
                         document.body.style.overflow = '';
                     }
                 });
@@ -1363,53 +1389,74 @@
             });
 
             // Notification button
-            notificationBtn.addEventListener('click', function() {
-                showNotification(
-                    'You have 5 notifications:\n- 3 assignments submitted\n- 1 parent meeting request\n- 1 school announcement',
-                    'info');
-                this.querySelector('.notification-badge').style.display = 'none';
-            });
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', function() {
+                    showNotification(
+                        'You have 5 notifications:\n- 3 assignments submitted\n- 1 parent meeting request\n- 1 school announcement',
+                        'info');
+                    const badge = this.querySelector('.notification-badge');
+                    if (badge) {
+                        badge.style.display = 'none';
+                    }
+                });
+            }
 
             // Feature button click handlers
-            viewScheduleBtn.addEventListener('click', function() {
-                classScheduleModal.classList.add('active');
-            });
+            if (viewScheduleBtn && classScheduleModal) {
+                viewScheduleBtn.addEventListener('click', function() {
+                    classScheduleModal.classList.add('active');
+                });
+            }
 
-            createAssignmentBtn.addEventListener('click', function() {
-                createAssignmentModal.classList.add('active');
-            });
+            if (createAssignmentBtn && createAssignmentModal) {
+                createAssignmentBtn.addEventListener('click', function() {
+                    createAssignmentModal.classList.add('active');
+                });
+            }
 
-            studentReportsBtn.addEventListener('click', function() {
-                showNotification('Student progress reports would open here.', 'info');
-            });
+            if (studentReportsBtn) {
+                studentReportsBtn.addEventListener('click', function() {
+                    showNotification('Student progress reports would open here.', 'info');
+                });
+            }
 
-            attendanceReportBtn.addEventListener('click', function() {
-                showNotification('Attendance reports would open here.', 'info');
-            });
+            if (attendanceReportBtn) {
+                attendanceReportBtn.addEventListener('click', function() {
+                    showNotification('Attendance reports would open here.', 'info');
+                });
+            }
 
-            resultsReportBtn.addEventListener('click', function() {
-                showNotification('Results export feature would open here.', 'info');
-            });
+            if (resultsReportBtn) {
+                resultsReportBtn.addEventListener('click', function() {
+                    showNotification('Results export feature would open here.', 'info');
+                });
+            }
 
-            uploadMaterialBtn.addEventListener('click', function() {
-                showNotification('Material upload interface would open here.', 'info');
-            });
+            if (uploadMaterialBtn) {
+                uploadMaterialBtn.addEventListener('click', function() {
+                    showNotification('Material upload interface would open here.', 'info');
+                });
+            }
 
             // Close modals
-            closeScheduleModal.addEventListener('click', function() {
-                classScheduleModal.classList.remove('active');
-            });
+            if (closeScheduleModal && classScheduleModal) {
+                closeScheduleModal.addEventListener('click', function() {
+                    classScheduleModal.classList.remove('active');
+                });
+            }
 
-            closeAssignmentModal.addEventListener('click', function() {
-                createAssignmentModal.classList.remove('active');
-            });
+            if (closeAssignmentModal && createAssignmentModal) {
+                closeAssignmentModal.addEventListener('click', function() {
+                    createAssignmentModal.classList.remove('active');
+                });
+            }
 
             // Close modals when clicking outside
             window.addEventListener('click', function(e) {
-                if (e.target === classScheduleModal) {
+                if (classScheduleModal && e.target === classScheduleModal) {
                     classScheduleModal.classList.remove('active');
                 }
-                if (e.target === createAssignmentModal) {
+                if (createAssignmentModal && e.target === createAssignmentModal) {
                     createAssignmentModal.classList.remove('active');
                 }
             });
@@ -1423,8 +1470,8 @@
 
                     // Close mobile sidebar if resizing to desktop
                     if (window.innerWidth > 1024) {
-                        sidebar.classList.remove('active');
-                        sidebarOverlay.classList.remove('active');
+                        if (sidebar) sidebar.classList.remove('active');
+                        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
                         document.body.style.overflow = '';
                     }
                 }, 250);

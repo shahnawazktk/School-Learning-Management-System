@@ -51,12 +51,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close dropdowns when clicking outside
     document.addEventListener('click', function(e) {
         // Close notification dropdown
-        if (notificationDropdown && !notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+        if (notificationDropdown && notificationBtn && !notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
             notificationDropdown.classList.remove('show');
         }
         
         // Close profile dropdown
-        if (profileDropdown && !userProfileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+        if (profileDropdown && userProfileBtn && !userProfileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
             profileDropdown.classList.remove('show');
         }
     });
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close sidebar on mobile when clicking outside
     if (window.innerWidth <= 768) {
         document.addEventListener('click', function(e) {
-            if (sidebar && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+            if (sidebar && toggleBtn && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
                 sidebar.classList.add('collapsed');
             }
         });

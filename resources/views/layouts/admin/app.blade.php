@@ -1411,6 +1411,10 @@
 
         // Sidebar Toggle Function
         const toggleSidebar = () => {
+            if (!sidebar || !mainContent || !sidebarOverlay) {
+                return;
+            }
+
             const isMobile = window.innerWidth <= 576;
             const isTablet = window.innerWidth <= 1024;
 
@@ -1541,12 +1545,12 @@
         // Feature Button Handlers
         const featureHandlers = {
             // School Info
-            editSchoolInfoBtn: () => schoolInfoModal.classList.add('active'),
-            viewSchoolSettingsBtn: () => schoolInfoModal.classList.add('active'),
+            editSchoolInfoBtn: () => schoolInfoModal?.classList.add('active'),
+            viewSchoolSettingsBtn: () => schoolInfoModal?.classList.add('active'),
 
             // Classes
-            addClassBtn: () => addClassModal.classList.add('active'),
-            viewClassesBtn: () => addClassModal.classList.add('active'),
+            addClassBtn: () => addClassModal?.classList.add('active'),
+            viewClassesBtn: () => addClassModal?.classList.add('active'),
 
             // Subjects
             addSubjectBtn: () => alert('Add Subject feature would open here'),
@@ -1565,8 +1569,8 @@
             resultsReportBtn: () => alert('Results Reports would be displayed here'),
 
             // Modal Closes
-            closeSchoolInfoModal: () => schoolInfoModal.classList.remove('active'),
-            closeAddClassModal: () => addClassModal.classList.remove('active')
+            closeSchoolInfoModal: () => schoolInfoModal?.classList.remove('active'),
+            closeAddClassModal: () => addClassModal?.classList.remove('active')
         };
 
         // Attach Event Listeners
@@ -1595,7 +1599,9 @@
         // Close sidebar overlay click
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', () => {
-                sidebar.classList.remove('expanded');
+                if (sidebar) {
+                    sidebar.classList.remove('expanded');
+                }
                 sidebarOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             });
@@ -1607,13 +1613,13 @@
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 if (window.innerWidth > 576) {
-                    sidebar.classList.remove('expanded');
-                    sidebarOverlay.classList.remove('active');
+                    if (sidebar) sidebar.classList.remove('expanded');
+                    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
                     document.body.style.overflow = '';
                 }
                 if (window.innerWidth > 1024) {
-                    sidebar.classList.remove('collapsed');
-                    mainContent.classList.remove('expanded');
+                    if (sidebar) sidebar.classList.remove('collapsed');
+                    if (mainContent) mainContent.classList.remove('expanded');
                 }
             }, 250);
         });
@@ -1621,7 +1627,9 @@
         // Close dropdown when clicking on dropdown items
         document.querySelectorAll('.dropdown-item').forEach(item => {
             item.addEventListener('click', () => {
-                userDropdown.classList.remove('active');
+                if (userDropdown) {
+                    userDropdown.classList.remove('active');
+                }
             });
         });
 
@@ -1632,20 +1640,24 @@
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
-            initChart();
+            try {
+                initChart();
 
-            // Set initial state based on screen size
-            if (window.innerWidth <= 1024) {
-                sidebar.classList.add('collapsed');
-                mainContent.classList.add('expanded');
+                // Set initial state based on screen size
+                if (window.innerWidth <= 1024) {
+                    if (sidebar) sidebar.classList.add('collapsed');
+                    if (mainContent) mainContent.classList.add('expanded');
+                }
+
+                console.log('School Management Admin Dashboard loaded successfully.');
+                console.log('Layout features:');
+                console.log('1. Fixed sidebar with proper overflow handling');
+                console.log('2. Sticky header with responsive design');
+                console.log('3. Main content with fixed size and scroll');
+                console.log('4. Mobile-friendly sidebar overlay');
+            } catch (error) {
+                console.error('Admin dashboard initialization failed:', error);
             }
-
-            console.log('School Management Admin Dashboard loaded successfully.');
-            console.log('Layout features:');
-            console.log('1. Fixed sidebar with proper overflow handling');
-            console.log('2. Sticky header with responsive design');
-            console.log('3. Main content with fixed size and scroll');
-            console.log('4. Mobile-friendly sidebar overlay');
         });
     </script>
     <script>
