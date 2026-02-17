@@ -28,23 +28,195 @@ class TeacherController extends Controller
         return $teacher;
     }
 
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $teacher = $this->getTeacher();
-        
-        $courses = Course::where('teacher_id', Auth::id())->withCount('enrollments')->get();
-        $totalStudents = Enrollment::whereIn('course_id', $courses->pluck('id'))->distinct('student_id')->count();
-        $pendingSubmissions = Submission::whereHas('assignment', function($q) {
+
+        $period = $request->string('period')->toString();
+        $allowedPeriods = ['today', 'week', 'month', 'all'];
+        $selectedPeriod = in_array($period, $allowedPeriods, true) ? $period : 'week';
+
+        $courseOptions = Course::where('teacher_id', Auth::id())
+            ->orderBy('title')
+            ->get(['id', 'title']);
+        $selectedCourseId = (int) $request->integer('course_id');
+        $selectedCourseId = $courseOptions->contains('id', $selectedCourseId) ? $selectedCourseId : null;
+
+        $rangeStart = null;
+        $rangeEnd = null;
+        $periodLabel = 'This Week';
+
+        if ($selectedPeriod === 'today') {
+            $rangeStart = now()->startOfDay();
+            $rangeEnd = now()->endOfDay();
+            $periodLabel = 'Today';
+        } elseif ($selectedPeriod === 'week') {
+            $rangeStart = now()->startOfWeek();
+            $rangeEnd = now()->endOfWeek();
+            $periodLabel = 'This Week';
+        } elseif ($selectedPeriod === 'month') {
+            $rangeStart = now()->startOfMonth();
+            $rangeEnd = now()->endOfMonth();
+            $periodLabel = 'This Month';
+        } else {
+            $periodLabel = 'All Time';
+        }
+
+        $applyRange = function ($query, $column) use ($rangeStart, $rangeEnd) {
+            if ($rangeStart && $rangeEnd) {
+                $query->whereBetween($column, [$rangeStart, $rangeEnd]);
+            }
+            return $query;
+        };
+
+        $coursesQuery = Course::where('teacher_id', Auth::id())
+            ->withCount('enrollments')
+            ->with('subject');
+
+        if ($selectedCourseId) {
+            $coursesQuery->where('id', $selectedCourseId);
+        }
+
+        $courses = $coursesQuery->get();
+        $courseIds = $courses->pluck('id');
+        $totalStudents = Enrollment::whereIn('course_id', $courseIds)->distinct('student_id')->count();
+
+        $pendingSubmissionsQuery = Submission::whereHas('assignment', function($q) use ($courseIds) {
             $q->where('teacher_id', Auth::id());
-        })->where('status', 'submitted')->whereNull('marks_obtained')->count();
+            if ($courseIds->isNotEmpty()) {
+                $q->whereIn('course_id', $courseIds);
+            }
+        })->where('status', 'submitted')->whereNull('marks_obtained');
+
+        $applyRange($pendingSubmissionsQuery, 'submitted_at');
+        $pendingSubmissions = (clone $pendingSubmissionsQuery)->count();
+        $overdueGrading = (clone $pendingSubmissionsQuery)->whereHas('assignment', function($q) {
+            $q->whereNotNull('due_date')->where('due_date', '<', now());
+        })->count();
+        $gradedInPeriod = Submission::whereHas('assignment', function($q) use ($courseIds) {
+            $q->where('teacher_id', Auth::id());
+            if ($courseIds->isNotEmpty()) {
+                $q->whereIn('course_id', $courseIds);
+            }
+        })->where('status', 'graded')
+            ->when($rangeStart && $rangeEnd, fn ($query) => $query->whereBetween('updated_at', [$rangeStart, $rangeEnd]))
+            ->count();
         
         $recentAssignments = Assignment::where('teacher_id', Auth::id())
+            ->when($selectedCourseId, fn ($q) => $q->where('course_id', $selectedCourseId))
+            ->when($rangeStart && $rangeEnd, fn ($query) => $query->whereBetween('created_at', [$rangeStart, $rangeEnd]))
             ->with('course')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
 
-        return view('teacher.dashboard', compact('teacher', 'courses', 'totalStudents', 'pendingSubmissions', 'recentAssignments'));
+        $gradingQueue = Submission::query()
+            ->select('submissions.*')
+            ->join('assignments', 'assignments.id', '=', 'submissions.assignment_id')
+            ->where('assignments.teacher_id', Auth::id())
+            ->when($selectedCourseId, fn ($q) => $q->where('assignments.course_id', $selectedCourseId))
+            ->where('submissions.status', 'submitted')
+            ->whereNull('submissions.marks_obtained')
+            ->when($rangeStart && $rangeEnd, fn ($query) => $query->whereBetween('submissions.submitted_at', [$rangeStart, $rangeEnd]))
+            ->with(['student.user', 'assignment.course'])
+            ->orderBy('assignments.due_date')
+            ->orderBy('submissions.submitted_at')
+            ->take(8)
+            ->get();
+
+        $upcomingAssignments = Assignment::where('teacher_id', Auth::id())
+            ->with('course')
+            ->when($selectedCourseId, fn ($q) => $q->where('course_id', $selectedCourseId))
+            ->whereBetween('due_date', [now(), now()->copy()->addDays(14)])
+            ->orderBy('due_date')
+            ->take(6)
+            ->get();
+
+        $upcomingExams = Exam::whereHas('course', function($q) {
+            $q->where('teacher_id', Auth::id());
+        })
+            ->with('course')
+            ->when($selectedCourseId, fn ($q) => $q->where('course_id', $selectedCourseId))
+            ->whereBetween('exam_date', [now()->toDateString(), now()->copy()->addDays(14)->toDateString()])
+            ->orderBy('exam_date')
+            ->take(6)
+            ->get();
+
+        $pendingByCourse = collect();
+        $avgByCourse = collect();
+
+        if ($courseIds->isNotEmpty()) {
+            $pendingByCourse = Submission::query()
+                ->join('assignments', 'assignments.id', '=', 'submissions.assignment_id')
+                ->whereIn('assignments.course_id', $courseIds)
+                ->where('submissions.status', 'submitted')
+                ->whereNull('submissions.marks_obtained')
+                ->when($rangeStart && $rangeEnd, fn ($query) => $query->whereBetween('submissions.submitted_at', [$rangeStart, $rangeEnd]))
+                ->groupBy('assignments.course_id')
+                ->selectRaw('assignments.course_id as course_id, COUNT(*) as total_pending')
+                ->get()
+                ->mapWithKeys(function ($row) {
+                    return [(int) $row->course_id => (int) $row->total_pending];
+                });
+
+            $avgByCourse = GradeScore::whereIn('course_id', $courseIds)
+                ->when($rangeStart && $rangeEnd, fn ($query) => $query->whereBetween('created_at', [$rangeStart, $rangeEnd]))
+                ->groupBy('course_id')
+                ->selectRaw('course_id, AVG(percentage) as avg_percentage')
+                ->get()
+                ->mapWithKeys(function ($row) {
+                    return [(int) $row->course_id => round((float) $row->avg_percentage, 1)];
+                });
+        }
+
+        $coursePerformance = $courses->map(function ($course) use ($pendingByCourse, $avgByCourse) {
+            $course->pending_grading_count = $pendingByCourse->get($course->id, 0);
+            $course->avg_percentage = $avgByCourse->get($course->id);
+            return $course;
+        })->sortByDesc('enrollments_count')->values();
+
+        $calendarItems = collect();
+
+        foreach ($upcomingAssignments as $assignment) {
+            $calendarItems->push([
+                'type' => 'Assignment Due',
+                'title' => $assignment->title,
+                'course' => optional($assignment->course)->title,
+                'date' => $assignment->due_date,
+                'badge' => 'primary',
+                'icon' => 'fa-file-lines',
+            ]);
+        }
+
+        foreach ($upcomingExams as $exam) {
+            $calendarItems->push([
+                'type' => 'Exam',
+                'title' => $exam->title,
+                'course' => optional($exam->course)->title,
+                'date' => $exam->exam_date,
+                'badge' => 'warning',
+                'icon' => 'fa-pen-ruler',
+            ]);
+        }
+
+        $calendarItems = $calendarItems->sortBy('date')->take(10)->values();
+
+        return view('teacher.dashboard', compact(
+            'teacher',
+            'courses',
+            'totalStudents',
+            'pendingSubmissions',
+            'recentAssignments',
+            'overdueGrading',
+            'gradedInPeriod',
+            'gradingQueue',
+            'coursePerformance',
+            'calendarItems',
+            'courseOptions',
+            'selectedCourseId',
+            'selectedPeriod',
+            'periodLabel'
+        ));
     }
 
     public function courses()
@@ -127,10 +299,21 @@ class TeacherController extends Controller
             'state' => 'nullable|string|max:100',
             'zip_code' => 'nullable|string|max:20',
             'emergency_contact' => 'nullable|string|max:200',
+            'profile_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $teacher = $this->getTeacher();
-        $teacher->update($request->only(['department', 'qualification', 'experience', 'address', 'city', 'state', 'zip_code', 'emergency_contact']));
+        $payload = $request->only(['department', 'qualification', 'experience', 'address', 'city', 'state', 'zip_code', 'emergency_contact']);
+
+        if ($request->hasFile('profile_image')) {
+            if (!empty($teacher->profile_image)) {
+                Storage::disk('public')->delete($teacher->profile_image);
+            }
+
+            $payload['profile_image'] = $request->file('profile_image')->store('teachers/profiles', 'public');
+        }
+
+        $teacher->update($payload);
 
         return redirect()->route('teacher.profile')->with('success', 'Profile updated successfully!');
     }
