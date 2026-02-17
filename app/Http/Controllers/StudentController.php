@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Student;
@@ -116,16 +117,90 @@ class StudentController extends Controller
         ));
     }
 
-    public function subjects()
+    public function subjects(Request $request)
     {
         $student = $this->getStudent();
+        $subjectData = $this->buildSubjectData($student, $request);
 
-        $status = request('status');
-        $search = trim((string) request('q'));
+        return view('student.subjects', [
+            'student' => $student,
+            ...$subjectData,
+        ]);
+    }
 
-        $enrollmentQuery = Enrollment::where('student_id', $student->id)
+    public function downloadSubjects(Request $request)
+    {
+        $student = $this->getStudent();
+        $subjectData = $this->buildSubjectData($student, $request);
+        $subjectCards = $subjectData['subjectCards'];
+        $fileName = 'subject-progress-' . $student->id . '-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($subjectCards) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Course',
+                'Subject Code',
+                'Credits',
+                'Instructor',
+                'Status',
+                'Submitted Assignments',
+                'Total Assignments',
+                'Completion',
+                'Next Due Date',
+            ]);
+
+            foreach ($subjectCards as $card) {
+                $course = $card['course'];
+                $subject = $card['subject'];
+                $teacher = $card['teacher'];
+                $enrollment = $card['enrollment'];
+                $nextDue = $card['next_due'];
+
+                fputcsv($handle, [
+                    (string) ($course->title ?? $subject->name ?? 'Untitled Subject'),
+                    (string) ($subject->code ?? 'N/A'),
+                    (string) ($subject->credits ?? 0),
+                    (string) ($teacher->name ?? 'Not assigned'),
+                    ucfirst((string) ($enrollment->status ?? 'N/A')),
+                    (string) $card['submitted_assignments'],
+                    (string) $card['total_assignments'],
+                    (string) ($card['completion'] . '%'),
+                    $nextDue && $nextDue->due_date ? $nextDue->due_date->format('Y-m-d H:i') : 'N/A',
+                ]);
+            }
+
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function downloadSubjectsPdf(Request $request)
+    {
+        $student = $this->getStudent();
+        $subjectData = $this->buildSubjectData($student, $request);
+        $fileName = 'subject-progress-report-' . $student->id . '-' . now()->format('Ymd-His') . '.pdf';
+
+        $pdf = Pdf::loadView('student.subjects-report-pdf', [
+            'student' => $student,
+            ...$subjectData,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download($fileName);
+    }
+
+    private function buildSubjectData(Student $student, Request $request): array
+    {
+        $status = $request->string('status')->toString();
+        $status = in_array($status, ['enrolled', 'completed', 'dropped'], true) ? $status : '';
+        $search = trim($request->string('q')->toString());
+        $sort = strtolower(trim($request->string('sort')->toString()));
+        $sort = in_array($sort, ['progress_desc', 'progress_asc', 'name_asc', 'name_desc', 'next_due'], true) ? $sort : 'progress_desc';
+
+        $enrollments = Enrollment::where('student_id', $student->id)
             ->with(['course.subject', 'course.teacher', 'subject'])
-            ->when(in_array($status, ['enrolled', 'completed', 'dropped']), function ($query) use ($status) {
+            ->when($status !== '', function ($query) use ($status) {
                 $query->where('status', $status);
             })
             ->when($search !== '', function ($query) use ($search) {
@@ -145,9 +220,8 @@ class StudentController extends Controller
                                 ->orWhere('code', 'like', '%' . $search . '%');
                         });
                 });
-            });
-
-        $enrollments = $enrollmentQuery->get();
+            })
+            ->get();
         $courseIds = $enrollments->pluck('course_id')->filter()->unique()->values();
 
         $assignmentsByCourse = Assignment::whereIn('course_id', $courseIds)
@@ -179,6 +253,9 @@ class StudentController extends Controller
             $nextDue = $courseAssignments->first(function ($assignment) {
                 return $assignment->due_date && $assignment->due_date->isFuture();
             });
+            $daysLeft = $nextDue && $nextDue->due_date
+                ? now()->diffInDays($nextDue->due_date, false)
+                : null;
 
             return [
                 'enrollment' => $enrollment,
@@ -189,8 +266,38 @@ class StudentController extends Controller
                 'submitted_assignments' => $submittedCount,
                 'completion' => $completion,
                 'next_due' => $nextDue,
+                'days_left' => $daysLeft,
             ];
         });
+
+        if ($sort === 'progress_asc') {
+            $subjectCards = $subjectCards->sortBy('completion')->values();
+        } elseif ($sort === 'name_asc') {
+            $subjectCards = $subjectCards->sortBy(function ($card) {
+                return strtolower((string) ($card['course']->title ?? $card['subject']->name ?? ''));
+            })->values();
+        } elseif ($sort === 'name_desc') {
+            $subjectCards = $subjectCards->sortByDesc(function ($card) {
+                return strtolower((string) ($card['course']->title ?? $card['subject']->name ?? ''));
+            })->values();
+        } elseif ($sort === 'next_due') {
+            $subjectCards = $subjectCards->sortBy(function ($card) {
+                $nextDue = $card['next_due'];
+                return $nextDue && $nextDue->due_date
+                    ? $nextDue->due_date->timestamp
+                    : PHP_INT_MAX;
+            })->values();
+        } else {
+            $subjectCards = $subjectCards->sortByDesc('completion')->values();
+        }
+
+        $upcomingDeadlinesCount = $subjectCards->filter(function ($card) {
+            return !is_null($card['days_left']) && $card['days_left'] >= 0 && $card['days_left'] <= 7;
+        })->count();
+
+        $atRiskCount = $subjectCards->filter(function ($card) {
+            return $card['enrollment']->status === 'enrolled' && $card['completion'] < 50;
+        })->count();
 
         $stats = [
             'total_subjects' => $enrollments->count(),
@@ -199,19 +306,163 @@ class StudentController extends Controller
                 return optional($card['subject'])->credits ?? 0;
             }),
             'average_progress' => (int) round($subjectCards->avg('completion') ?? 0),
+            'upcoming_deadlines' => $upcomingDeadlinesCount,
+            'at_risk' => $atRiskCount,
         ];
 
-        return view('student.subjects', compact('student', 'enrollments', 'subjectCards', 'stats', 'status', 'search'));
+        $chartLabels = $subjectCards->map(function ($card) {
+            return $card['course']->title ?? $card['subject']->name ?? 'Untitled';
+        })->values();
+        $chartProgress = $subjectCards->pluck('completion')->values();
+        $chartSubmitted = $subjectCards->pluck('submitted_assignments')->values();
+        $chartTotalAssignments = $subjectCards->pluck('total_assignments')->values();
+
+        return compact(
+            'enrollments',
+            'subjectCards',
+            'stats',
+            'status',
+            'search',
+            'sort',
+            'chartLabels',
+            'chartProgress',
+            'chartSubmitted',
+            'chartTotalAssignments'
+        );
     }
 
-    public function assignments()
+    public function assignments(Request $request)
     {
         $student = $this->getStudent();
+        $assignmentData = $this->buildAssignmentData($student, $request);
 
-        $search = trim((string) request('q'));
-        $status = request('status');
-        $courseId = request('course_id');
-        $sort = request('sort', 'due_asc');
+        return view('student.assignments', [
+            'student' => $student,
+            ...$assignmentData,
+        ]);
+    }
+
+    public function downloadAssignments(Request $request)
+    {
+        $student = $this->getStudent();
+        $assignmentData = $this->buildAssignmentData($student, $request);
+        $assignmentCards = $assignmentData['assignmentCards'];
+        $fileName = 'assignments-' . $student->id . '-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($assignmentCards) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Title',
+                'Course',
+                'Subject',
+                'Status',
+                'Due Date',
+                'Days Left',
+                'Submitted At',
+                'Score',
+                'Max Marks',
+            ]);
+
+            foreach ($assignmentCards as $card) {
+                $assignment = $card['assignment'];
+                $submission = $card['submission'];
+
+                fputcsv($handle, [
+                    (string) $assignment->title,
+                    (string) ($assignment->course->title ?? 'N/A'),
+                    (string) (optional($assignment->course->subject)->code ?? 'N/A'),
+                    ucfirst((string) $card['status_key']),
+                    $assignment->due_date ? $assignment->due_date->format('Y-m-d H:i') : 'N/A',
+                    is_null($card['days_left']) ? 'N/A' : (string) $card['days_left'],
+                    $submission && $submission->submitted_at ? $submission->submitted_at->format('Y-m-d H:i') : 'N/A',
+                    $submission && !is_null($submission->marks_obtained) ? (string) $submission->marks_obtained : 'N/A',
+                    (string) ($assignment->max_marks ?? 'N/A'),
+                ]);
+            }
+
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function downloadAssignmentsPdf(Request $request)
+    {
+        $student = $this->getStudent();
+        $assignmentData = $this->buildAssignmentData($student, $request);
+        $fileName = 'assignment-report-' . $student->id . '-' . now()->format('Ymd-His') . '.pdf';
+
+        $pdf = Pdf::loadView('student.assignments-report-pdf', [
+            'student' => $student,
+            ...$assignmentData,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download($fileName);
+    }
+
+    public function sendAssignmentReminders(Request $request)
+    {
+        $student = $this->getStudent();
+        $days = max(1, min(14, (int) $request->input('days', 3)));
+
+        $enrolledCourseIds = Enrollment::where('student_id', $student->id)
+            ->pluck('course_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $pendingAssignments = Assignment::whereIn('course_id', $enrolledCourseIds)
+            ->whereNotNull('due_date')
+            ->whereBetween('due_date', [now(), now()->copy()->addDays($days)])
+            ->whereDoesntHave('submissions', function ($submissionQuery) use ($student) {
+                $submissionQuery->where('student_id', $student->id);
+            })
+            ->with('course')
+            ->orderBy('due_date')
+            ->get();
+
+        if ($pendingAssignments->isEmpty()) {
+            return back()->with('error', 'No pending assignments found for the next ' . $days . ' day(s).');
+        }
+
+        $email = trim((string) Auth::user()->email);
+        if ($email === '') {
+            return back()->with('error', 'Your account email is missing. Please update profile first.');
+        }
+
+        $subject = 'Assignment Reminder - Next ' . $days . ' Day(s)';
+
+        $body = view('student.assignment-reminder-email', [
+            'student' => $student,
+            'pendingAssignments' => $pendingAssignments,
+            'days' => $days,
+        ])->render();
+
+        try {
+            Mail::html($body, function ($message) use ($email, $subject) {
+                $message->to($email)->subject($subject);
+            });
+        } catch (\Throwable $exception) {
+            return back()->with('error', 'Reminder email could not be sent. Check mail configuration.');
+        }
+
+        return back()->with('success', 'Reminder email sent with ' . $pendingAssignments->count() . ' pending assignment(s).');
+    }
+
+    private function buildAssignmentData(Student $student, Request $request): array
+    {
+        $search = trim($request->string('q')->toString());
+        $status = strtolower(trim($request->string('status')->toString()));
+        $status = in_array($status, ['pending', 'submitted', 'overdue', 'late'], true) ? $status : '';
+        $courseId = $request->integer('course_id');
+        $courseId = $courseId > 0 ? $courseId : null;
+        $sort = strtolower(trim($request->string('sort')->toString()));
+        $sort = in_array($sort, ['due_asc', 'due_desc', 'newest', 'oldest'], true) ? $sort : 'due_asc';
+        $dueWindow = strtolower(trim($request->string('due_window')->toString()));
+        $dueWindow = in_array($dueWindow, ['today', 'next_7', 'next_30', 'overdue'], true) ? $dueWindow : '';
+        $view = strtolower(trim($request->string('view')->toString()));
+        $view = in_array($view, ['list', 'compact'], true) ? $view : 'list';
 
         $enrolledCourseIds = Enrollment::where('student_id', $student->id)
             ->pluck('course_id')
@@ -260,6 +511,7 @@ class StudentController extends Controller
         }
 
         $assignments = $query->get();
+        $today = now()->startOfDay();
 
         $assignmentCards = $assignments->map(function ($assignment) {
             $submission = $assignment->submissions->first();
@@ -268,38 +520,81 @@ class StudentController extends Controller
             $isLateSubmission = $isSubmitted && ($submission->status === 'late');
             $statusKey = $isSubmitted ? ($isLateSubmission ? 'late' : 'submitted') : ($isOverdue ? 'overdue' : 'pending');
             $daysLeft = $assignment->due_date ? now()->diffInDays($assignment->due_date, false) : null;
+            $priority = (!is_null($daysLeft) && $daysLeft <= 2 && $statusKey === 'pending') ? 'high' : 'normal';
 
             return [
                 'assignment' => $assignment,
                 'submission' => $submission,
                 'status_key' => $statusKey,
                 'days_left' => $daysLeft,
+                'priority' => $priority,
             ];
-        })->when(in_array($status, ['pending', 'submitted', 'overdue', 'late']), function ($cards) use ($status) {
-            return $cards->where('status_key', $status)->values();
         });
+
+        if ($status !== '') {
+            $assignmentCards = $assignmentCards->where('status_key', $status)->values();
+        }
+
+        if ($dueWindow !== '') {
+            $assignmentCards = $assignmentCards->filter(function ($card) use ($dueWindow, $today) {
+                $assignment = $card['assignment'];
+                if (!$assignment->due_date) {
+                    return false;
+                }
+
+                $dueDate = $assignment->due_date->copy()->startOfDay();
+                $isPending = $card['status_key'] === 'pending';
+
+                return match($dueWindow) {
+                    'today' => $isPending && $dueDate->equalTo($today),
+                    'next_7' => $isPending && $dueDate->between($today, $today->copy()->addDays(7)),
+                    'next_30' => $isPending && $dueDate->between($today, $today->copy()->addDays(30)),
+                    'overdue' => in_array($card['status_key'], ['overdue', 'late'], true),
+                    default => true,
+                };
+            })->values();
+        }
 
         $stats = [
             'total' => $assignmentCards->count(),
             'pending' => $assignmentCards->where('status_key', 'pending')->count(),
             'submitted' => $assignmentCards->where('status_key', 'submitted')->count() + $assignmentCards->where('status_key', 'late')->count(),
             'overdue' => $assignmentCards->where('status_key', 'overdue')->count(),
+            'critical' => $assignmentCards->where('priority', 'high')->count(),
             'avg_score' => $assignmentCards
                 ->pluck('submission')
-                ->filter(fn($submission) => $submission && !is_null($submission->marks_obtained))
+                ->filter(fn ($submission) => $submission && !is_null($submission->marks_obtained))
                 ->avg('marks_obtained'),
         ];
 
-        return view('student.assignments', compact(
-            'student',
+        $nextDeadline = $assignmentCards->filter(function ($card) {
+            return $card['status_key'] === 'pending' && $card['assignment']->due_date;
+        })->sortBy(function ($card) {
+            return $card['assignment']->due_date->timestamp;
+        })->first();
+
+        $chartStatusLabels = ['Pending', 'Submitted', 'Late', 'Overdue'];
+        $chartStatusValues = [
+            $assignmentCards->where('status_key', 'pending')->count(),
+            $assignmentCards->where('status_key', 'submitted')->count(),
+            $assignmentCards->where('status_key', 'late')->count(),
+            $assignmentCards->where('status_key', 'overdue')->count(),
+        ];
+
+        return compact(
             'assignmentCards',
             'stats',
             'search',
             'status',
             'courseId',
             'sort',
-            'courseOptions'
-        ));
+            'courseOptions',
+            'dueWindow',
+            'view',
+            'nextDeadline',
+            'chartStatusLabels',
+            'chartStatusValues'
+        );
     }
 
     public function attendance()

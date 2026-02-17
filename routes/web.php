@@ -75,7 +75,12 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
 Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
     Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
+    Route::get('/subjects/export', [StudentController::class, 'downloadSubjects'])->name('subjects.export');
+    Route::get('/subjects/report/pdf', [StudentController::class, 'downloadSubjectsPdf'])->name('subjects.report.pdf');
     Route::get('/assignments', [StudentController::class, 'assignments'])->name('assignments');
+    Route::get('/assignments/export', [StudentController::class, 'downloadAssignments'])->name('assignments.export');
+    Route::get('/assignments/report/pdf', [StudentController::class, 'downloadAssignmentsPdf'])->name('assignments.report.pdf');
+    Route::post('/assignments/reminders/send', [StudentController::class, 'sendAssignmentReminders'])->name('assignments.reminders.send');
     Route::get('/attendance', [StudentController::class, 'attendance'])->name('attendance');
     Route::post('/attendance/mark', [StudentController::class, 'markAttendance'])->name('attendance.mark');
     Route::get('/results', [StudentController::class, 'results'])->name('results');
