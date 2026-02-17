@@ -118,6 +118,45 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-graduate me-2 text-primary"></i>Student Details</h5>
+                    <a href="{{ route('student.profile') }}" class="btn btn-outline-primary btn-sm">View Profile</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Student ID</th>
+                                    <th>Class</th>
+                                    <th>Section</th>
+                                    <th>Academic Year</th>
+                                    <th>Roll No</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ auth()->user()->name }}</td>
+                                    <td>{{ $student->student_id ?? 'N/A' }}</td>
+                                    <td>{{ $student->class ?? 'N/A' }}</td>
+                                    <td>{{ $student->section ?? 'N/A' }}</td>
+                                    <td>{{ $student->academic_year ?? 'N/A' }}</td>
+                                    <td>{{ $student->roll_number ?? 'N/A' }}</td>
+                                    <td><span class="badge bg-primary">{{ ucfirst((string) ($student->status ?? 'N/A')) }}</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
                     <div>
                         <h6 class="mb-1"><i class="fas fa-receipt text-primary me-2"></i>Fee Overview</h6>
@@ -129,6 +168,22 @@
                     </div>
                     <a href="{{ route('student.fees') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-arrow-right me-1"></i>Open Fee Management
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-file-signature text-primary me-2"></i>New Admission</h6>
+                        <small class="text-muted">Apply for new class/course admission from a dedicated form.</small>
+                    </div>
+                    <a href="{{ route('student.admission-request') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i>Open Admission Form
                     </a>
                 </div>
             </div>

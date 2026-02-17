@@ -19,6 +19,7 @@ use App\Models\Subject;
 use App\Models\Exam;
 use App\Models\FeePayment;
 use App\Models\FeeTransaction;
+use App\Models\StudentAdmissionRequest;
 use Carbon\Carbon;
 
 class StudentController extends Controller
@@ -131,6 +132,204 @@ class StudentController extends Controller
         ));
     }
 
+    public function admissionRequest()
+    {
+        $student = $this->getStudent();
+
+        $admissionRequests = StudentAdmissionRequest::where('student_id', $student->id)
+            ->with('requestedCourse:id,title')
+            ->latest('submitted_at')
+            ->latest('id')
+            ->take(10)
+            ->get();
+
+        $admissionStats = [
+            'total' => $admissionRequests->count(),
+            'pending' => $admissionRequests->whereIn('status', ['pending', 'in_review'])->count(),
+            'approved' => $admissionRequests->where('status', 'approved')->count(),
+            'rejected' => $admissionRequests->where('status', 'rejected')->count(),
+        ];
+
+        $availableClasses = Student::query()
+            ->whereNotNull('class')
+            ->select('class')
+            ->distinct()
+            ->orderBy('class')
+            ->pluck('class')
+            ->values();
+
+        $availableSections = Student::query()
+            ->whereNotNull('section')
+            ->select('section')
+            ->distinct()
+            ->orderBy('section')
+            ->pluck('section')
+            ->values();
+
+        $availableCourses = Course::query()
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        $enrollments = Enrollment::where('student_id', $student->id)
+            ->with(['course:id,title', 'subject:id,name,code'])
+            ->latest('created_at')
+            ->get();
+
+        $feeRecords = FeePayment::where('student_id', $student->id)
+            ->orderByRaw("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'unpaid' THEN 2 WHEN status = 'partial' THEN 3 ELSE 4 END")
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        $feeTransactions = FeeTransaction::where('student_id', $student->id)
+            ->with('feePayment:id,title')
+            ->latest('paid_at')
+            ->latest('id')
+            ->take(8)
+            ->get();
+
+        $feeStats = [
+            'total_amount' => (float) $feeRecords->sum('amount'),
+            'paid_amount' => (float) $feeRecords->sum('paid_amount'),
+            'outstanding_amount' => max(0, (float) $feeRecords->sum('amount') - (float) $feeRecords->sum('paid_amount')),
+            'pending_count' => $feeRecords->whereIn('status', ['unpaid', 'partial', 'overdue'])->count(),
+        ];
+
+        return view('student.admission-request', compact(
+            'student',
+            'admissionRequests',
+            'admissionStats',
+            'availableClasses',
+            'availableSections',
+            'availableCourses',
+            'enrollments',
+            'feeRecords',
+            'feeTransactions',
+            'feeStats'
+        ));
+    }
+
+    public function newAdmission()
+    {
+        $student = $this->getStudent();
+
+        $availableClasses = Student::query()
+            ->whereNotNull('class')
+            ->select('class')
+            ->distinct()
+            ->orderBy('class')
+            ->pluck('class')
+            ->values();
+
+        $availableSections = Student::query()
+            ->whereNotNull('section')
+            ->select('section')
+            ->distinct()
+            ->orderBy('section')
+            ->pluck('section')
+            ->values();
+
+        $availableCourses = Course::query()
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        $feeRecords = FeePayment::where('student_id', $student->id)
+            ->orderByRaw("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'unpaid' THEN 2 WHEN status = 'partial' THEN 3 ELSE 4 END")
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        $feeStats = [
+            'total_amount' => (float) $feeRecords->sum('amount'),
+            'paid_amount' => (float) $feeRecords->sum('paid_amount'),
+            'outstanding_amount' => max(0, (float) $feeRecords->sum('amount') - (float) $feeRecords->sum('paid_amount')),
+            'pending_count' => $feeRecords->whereIn('status', ['unpaid', 'partial', 'overdue'])->count(),
+        ];
+
+        return view('student.new-admission', compact(
+            'student',
+            'availableClasses',
+            'availableSections',
+            'availableCourses',
+            'feeStats'
+        ));
+    }
+
+    public function updateNewAdmissionProfile(Request $request)
+    {
+        $request->validate([
+            'address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'zip_code' => 'nullable|string|max:20',
+            'emergency_contact' => 'nullable|string|max:200',
+            'profile_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        $student = $this->getStudent();
+        $payload = $request->only(['address', 'city', 'state', 'zip_code', 'emergency_contact']);
+
+        if ($request->hasFile('profile_image')) {
+            if (!empty($student->profile_image)) {
+                Storage::disk('public')->delete($student->profile_image);
+            }
+
+            $payload['profile_image'] = $request->file('profile_image')->store('students/profiles', 'public');
+        }
+
+        $student->update($payload);
+
+        return redirect()->route('student.new-admission')->with('success', 'Student details updated successfully!');
+    }
+
+    public function submitAdmissionRequest(Request $request)
+    {
+        $student = $this->getStudent();
+
+        $validated = $request->validate([
+            'request_type' => 'required|in:class,course,both',
+            'requested_class' => 'nullable|string|max:50',
+            'requested_section' => 'nullable|string|max:20',
+            'requested_course_id' => 'nullable|integer|exists:courses,id',
+            'preferred_start_date' => 'nullable|date|after_or_equal:today',
+            'guardian_contact' => 'required|string|max:100',
+            'reason' => 'required|string|min:20|max:1000',
+        ]);
+
+        $requestType = $validated['request_type'];
+        $needsClass = in_array($requestType, ['class', 'both'], true);
+        $needsCourse = in_array($requestType, ['course', 'both'], true);
+
+        if ($needsClass && trim((string) ($validated['requested_class'] ?? '')) === '') {
+            return redirect()->route('student.admission-request')->withErrors(['requested_class' => 'Requested class is required for class admission request.'])->withInput();
+        }
+
+        if ($needsCourse && empty($validated['requested_course_id'])) {
+            return redirect()->route('student.admission-request')->withErrors(['requested_course_id' => 'Requested course is required for course admission request.'])->withInput();
+        }
+
+        $hasPending = StudentAdmissionRequest::where('student_id', $student->id)
+            ->whereIn('status', ['pending', 'in_review'])
+            ->exists();
+
+        if ($hasPending) {
+            return redirect()->route('student.admission-request')->with('error', 'You already have a pending admission request. Please wait for review.');
+        }
+
+        StudentAdmissionRequest::create([
+            'student_id' => $student->id,
+            'request_type' => $requestType,
+            'requested_class' => $validated['requested_class'] ?? null,
+            'requested_section' => $validated['requested_section'] ?? null,
+            'requested_course_id' => $validated['requested_course_id'] ?? null,
+            'preferred_start_date' => $validated['preferred_start_date'] ?? null,
+            'guardian_contact' => trim((string) $validated['guardian_contact']),
+            'reason' => trim((string) $validated['reason']),
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ]);
+
+        return redirect()->route('student.admission-request')->with('success', 'Admission request submitted successfully. Admin will review your application.');
+    }
+
     public function subjects(Request $request)
     {
         $student = $this->getStudent();
@@ -211,6 +410,10 @@ class StudentController extends Controller
         $search = trim($request->string('q')->toString());
         $sort = strtolower(trim($request->string('sort')->toString()));
         $sort = in_array($sort, ['progress_desc', 'progress_asc', 'name_asc', 'name_desc', 'next_due'], true) ? $sort : 'progress_desc';
+        $risk = strtolower(trim($request->string('risk')->toString()));
+        $risk = in_array($risk, ['high', 'medium', 'low'], true) ? $risk : '';
+        $deadlineWindow = strtolower(trim($request->string('deadline_window')->toString()));
+        $deadlineWindow = in_array($deadlineWindow, ['today', 'next_3', 'next_7', 'none'], true) ? $deadlineWindow : '';
 
         $enrollments = Enrollment::where('student_id', $student->id)
             ->with(['course.subject', 'course.teacher', 'subject'])
@@ -263,6 +466,7 @@ class StudentController extends Controller
 
             $totalAssignments = $courseAssignments->count();
             $submittedCount = $submittedForCourse->pluck('assignment_id')->unique()->count();
+            $remainingAssignments = max(0, $totalAssignments - $submittedCount);
             $completion = $totalAssignments > 0 ? (int) round(($submittedCount / $totalAssignments) * 100) : 0;
             $nextDue = $courseAssignments->first(function ($assignment) {
                 return $assignment->due_date && $assignment->due_date->isFuture();
@@ -270,6 +474,41 @@ class StudentController extends Controller
             $daysLeft = $nextDue && $nextDue->due_date
                 ? now()->diffInDays($nextDue->due_date, false)
                 : null;
+            $hasOverduePending = $courseAssignments->contains(function ($assignment) use ($submittedForCourse) {
+                if (!$assignment->due_date || !$assignment->due_date->isPast()) {
+                    return false;
+                }
+
+                return !$submittedForCourse->contains('assignment_id', $assignment->id);
+            });
+
+            $riskLevel = 'low';
+            if ($enrollment->status === 'enrolled') {
+                if ($hasOverduePending || ($completion < 35) || (!is_null($daysLeft) && $daysLeft <= 2 && $remainingAssignments > 0)) {
+                    $riskLevel = 'high';
+                } elseif ($completion < 60 || (!is_null($daysLeft) && $daysLeft <= 7 && $remainingAssignments > 0)) {
+                    $riskLevel = 'medium';
+                }
+            }
+
+            $urgencyBoost = $hasOverduePending ? 4 : 0;
+            if (!is_null($daysLeft) && $remainingAssignments > 0) {
+                if ($daysLeft <= 3) {
+                    $urgencyBoost += 3;
+                } elseif ($daysLeft <= 7) {
+                    $urgencyBoost += 2;
+                }
+            }
+            $progressPenalty = $completion < 50 ? 2 : 0;
+            $workloadScore = min(10, $remainingAssignments + $urgencyBoost + $progressPenalty);
+
+            $riskHourBoost = match ($riskLevel) {
+                'high' => 4,
+                'medium' => 2,
+                default => 0,
+            };
+            $recommendedHours = max(2, min(14, 2 + $remainingAssignments + $riskHourBoost));
+            $healthStatus = $riskLevel === 'high' ? 'critical' : ($riskLevel === 'medium' ? 'attention' : 'on_track');
 
             return [
                 'enrollment' => $enrollment,
@@ -278,11 +517,33 @@ class StudentController extends Controller
                 'teacher' => optional($course)->teacher,
                 'total_assignments' => $totalAssignments,
                 'submitted_assignments' => $submittedCount,
+                'remaining_assignments' => $remainingAssignments,
                 'completion' => $completion,
                 'next_due' => $nextDue,
                 'days_left' => $daysLeft,
+                'has_overdue_pending' => $hasOverduePending,
+                'risk_level' => $riskLevel,
+                'workload_score' => $workloadScore,
+                'recommended_hours' => $recommendedHours,
+                'health_status' => $healthStatus,
             ];
         });
+
+        if ($risk !== '') {
+            $subjectCards = $subjectCards->where('risk_level', $risk)->values();
+        }
+
+        if ($deadlineWindow !== '') {
+            $subjectCards = $subjectCards->filter(function ($card) use ($deadlineWindow) {
+                return match ($deadlineWindow) {
+                    'today' => !is_null($card['days_left']) && $card['days_left'] === 0,
+                    'next_3' => !is_null($card['days_left']) && $card['days_left'] >= 0 && $card['days_left'] <= 3,
+                    'next_7' => !is_null($card['days_left']) && $card['days_left'] >= 0 && $card['days_left'] <= 7,
+                    'none' => is_null($card['next_due']),
+                    default => true,
+                };
+            })->values();
+        }
 
         if ($sort === 'progress_asc') {
             $subjectCards = $subjectCards->sortBy('completion')->values();
@@ -313,6 +574,23 @@ class StudentController extends Controller
             return $card['enrollment']->status === 'enrolled' && $card['completion'] < 50;
         })->count();
 
+        $urgentSubjectsCount = $subjectCards->filter(function ($card) {
+            return $card['risk_level'] === 'high';
+        })->count();
+
+        $onTrackCount = $subjectCards->filter(function ($card) {
+            return $card['health_status'] === 'on_track' && $card['enrollment']->status === 'enrolled';
+        })->count();
+
+        $recommendedStudyHours = (int) $subjectCards->sum('recommended_hours');
+
+        $studyPlanner = $subjectCards
+            ->sortByDesc(function ($card) {
+                return ($card['workload_score'] * 100) + (100 - $card['completion']);
+            })
+            ->take(5)
+            ->values();
+
         $stats = [
             'total_subjects' => $enrollments->count(),
             'active_subjects' => $enrollments->where('status', 'enrolled')->count(),
@@ -322,6 +600,9 @@ class StudentController extends Controller
             'average_progress' => (int) round($subjectCards->avg('completion') ?? 0),
             'upcoming_deadlines' => $upcomingDeadlinesCount,
             'at_risk' => $atRiskCount,
+            'urgent_subjects' => $urgentSubjectsCount,
+            'on_track' => $onTrackCount,
+            'recommended_study_hours' => $recommendedStudyHours,
         ];
 
         $chartLabels = $subjectCards->map(function ($card) {
@@ -338,10 +619,13 @@ class StudentController extends Controller
             'status',
             'search',
             'sort',
+            'risk',
+            'deadlineWindow',
             'chartLabels',
             'chartProgress',
             'chartSubmitted',
-            'chartTotalAssignments'
+            'chartTotalAssignments',
+            'studyPlanner'
         );
     }
 

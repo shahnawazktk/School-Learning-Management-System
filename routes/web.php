@@ -79,6 +79,10 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
 
 Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
+    Route::get('/admission-request', [StudentController::class, 'admissionRequest'])->name('admission-request');
+    Route::get('/new-admission', [StudentController::class, 'newAdmission'])->name('new-admission');
+    Route::post('/new-admission/profile', [StudentController::class, 'updateNewAdmissionProfile'])->name('new-admission.profile.update');
+    Route::post('/admission-request', [StudentController::class, 'submitAdmissionRequest'])->name('admission-request.submit');
     Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
     Route::get('/subjects/export', [StudentController::class, 'downloadSubjects'])->name('subjects.export');
     Route::get('/subjects/report/pdf', [StudentController::class, 'downloadSubjectsPdf'])->name('subjects.report.pdf');

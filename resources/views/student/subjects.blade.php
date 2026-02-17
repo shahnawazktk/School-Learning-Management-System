@@ -164,6 +164,22 @@
                     </div>
                 </div>
             </div>
+            <div class="col-6 col-xl-2">
+                <div class="card border-0 shadow-sm h-100 text-center">
+                    <div class="card-body">
+                        <h5 class="mb-1 text-danger">{{ $stats['urgent_subjects'] }}</h5>
+                        <small class="text-muted">Urgent</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-xl-2">
+                <div class="card border-0 shadow-sm h-100 text-center">
+                    <div class="card-body">
+                        <h5 class="mb-1">{{ $stats['recommended_study_hours'] }}h</h5>
+                        <small class="text-muted">Recommended / Week</small>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @if($stats['at_risk'] > 0)
@@ -172,6 +188,64 @@
                 {{ $stats['at_risk'] }} subject(s) have low completion (&lt; 50%). Focus on pending assignments to improve progress.
             </div>
         @endif
+
+        @if($stats['urgent_subjects'] > 0)
+            <div class="alert alert-danger border-0 shadow-sm mb-4">
+                <i class="fas fa-bell me-2"></i>
+                {{ $stats['urgent_subjects'] }} subject(s) need immediate attention due to overdue/near deadlines.
+            </div>
+        @endif
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Smart Study Planner</h5>
+                <span class="badge text-bg-light">{{ $studyPlanner->count() }} priority items</span>
+            </div>
+            <div class="card-body">
+                @if($studyPlanner->isEmpty())
+                    <p class="text-muted mb-0">No planner items available for selected filters.</p>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Risk</th>
+                                    <th>Workload</th>
+                                    <th>Study Time</th>
+                                    <th>Next Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($studyPlanner as $plan)
+                                    @php
+                                        $riskBadge = match($plan['risk_level']) {
+                                            'high' => 'text-bg-danger',
+                                            'medium' => 'text-bg-warning',
+                                            default => 'text-bg-success',
+                                        };
+                                        $plannerTitle = $plan['course']->title ?? $plan['subject']->name ?? 'Untitled';
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $plannerTitle }}</td>
+                                        <td><span class="badge {{ $riskBadge }}">{{ ucfirst($plan['risk_level']) }}</span></td>
+                                        <td>{{ $plan['workload_score'] }}/10</td>
+                                        <td>{{ $plan['recommended_hours'] }}h/week</td>
+                                        <td>
+                                            @if($plan['next_due'])
+                                                {{ $plan['next_due']->due_date->format('M d, Y') }}
+                                            @else
+                                                <span class="text-muted">No due date</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
@@ -205,7 +279,26 @@
                                 <option value="dropped" {{ $status === 'dropped' ? 'selected' : '' }}>Dropped</option>
                             </select>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
+                            <label for="risk" class="form-label fw-semibold">Risk</label>
+                            <select id="risk" name="risk" class="form-select">
+                                <option value="">All</option>
+                                <option value="high" {{ $risk === 'high' ? 'selected' : '' }}>High</option>
+                                <option value="medium" {{ $risk === 'medium' ? 'selected' : '' }}>Medium</option>
+                                <option value="low" {{ $risk === 'low' ? 'selected' : '' }}>Low</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label for="deadline_window" class="form-label fw-semibold">Deadline</label>
+                            <select id="deadline_window" name="deadline_window" class="form-select">
+                                <option value="">All</option>
+                                <option value="today" {{ $deadlineWindow === 'today' ? 'selected' : '' }}>Due Today</option>
+                                <option value="next_3" {{ $deadlineWindow === 'next_3' ? 'selected' : '' }}>Next 3 Days</option>
+                                <option value="next_7" {{ $deadlineWindow === 'next_7' ? 'selected' : '' }}>Next 7 Days</option>
+                                <option value="none" {{ $deadlineWindow === 'none' ? 'selected' : '' }}>No Deadline</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
                             <label for="sort" class="form-label fw-semibold">Sort By</label>
                             <select id="sort" name="sort" class="form-select">
                                 <option value="progress_desc" {{ $sort === 'progress_desc' ? 'selected' : '' }}>Progress (High to Low)</option>
@@ -215,7 +308,7 @@
                                 <option value="next_due" {{ $sort === 'next_due' ? 'selected' : '' }}>Next Due Date</option>
                             </select>
                         </div>
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-2">
                             <div class="row g-2">
                                 <div class="col-6">
                                     <button type="submit" class="btn btn-primary w-100">
@@ -270,10 +363,27 @@
                                     <span class="text-muted">Assignments</span>
                                     <span class="fw-semibold">{{ $card['submitted_assignments'] }}/{{ $card['total_assignments'] }} Submitted</span>
                                 </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Remaining</span>
+                                    <span class="fw-semibold">{{ $card['remaining_assignments'] }}</span>
+                                </div>
                                 <div class="d-flex justify-content-between">
                                     <span class="text-muted">Enrolled On</span>
                                     <span class="fw-semibold">{{ optional($enrollment->enrollment_date)->format('M d, Y') ?? 'N/A' }}</span>
                                 </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mb-3">
+                                @php
+                                    $riskClass = match($card['risk_level']) {
+                                        'high' => 'text-bg-danger',
+                                        'medium' => 'text-bg-warning',
+                                        default => 'text-bg-success',
+                                    };
+                                @endphp
+                                <span class="badge {{ $riskClass }}">Risk: {{ ucfirst($card['risk_level']) }}</span>
+                                <span class="badge text-bg-light">Workload: {{ $card['workload_score'] }}/10</span>
+                                <span class="badge text-bg-light">{{ $card['recommended_hours'] }}h/week</span>
                             </div>
 
                             <div class="mb-3">
