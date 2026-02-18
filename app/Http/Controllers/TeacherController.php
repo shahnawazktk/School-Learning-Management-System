@@ -225,9 +225,91 @@ class TeacherController extends Controller
         $courses = Course::where('teacher_id', Auth::id())
             ->withCount('enrollments', 'assignments')
             ->with('subject')
+            ->orderBy('title')
             ->get();
 
-        return view('teacher.courses', compact('teacher', 'courses'));
+        $courseIds = $courses->pluck('id');
+
+        $pendingByCourse = collect();
+        $upcomingByCourse = collect();
+        $gradingCoverageByCourse = collect();
+
+        if ($courseIds->isNotEmpty()) {
+            $pendingByCourse = Submission::query()
+                ->join('assignments', 'assignments.id', '=', 'submissions.assignment_id')
+                ->whereIn('assignments.course_id', $courseIds)
+                ->where('submissions.status', 'submitted')
+                ->whereNull('submissions.marks_obtained')
+                ->groupBy('assignments.course_id')
+                ->selectRaw('assignments.course_id as course_id, COUNT(*) as total_pending')
+                ->get()
+                ->mapWithKeys(function ($row) {
+                    return [(int) $row->course_id => (int) $row->total_pending];
+                });
+
+            $upcomingByCourse = Assignment::query()
+                ->whereIn('course_id', $courseIds)
+                ->whereNotNull('due_date')
+                ->whereBetween('due_date', [now(), now()->copy()->addDays(7)])
+                ->groupBy('course_id')
+                ->selectRaw('course_id, COUNT(*) as total_upcoming')
+                ->get()
+                ->mapWithKeys(function ($row) {
+                    return [(int) $row->course_id => (int) $row->total_upcoming];
+                });
+
+            $gradingCoverageByCourse = Submission::query()
+                ->join('assignments', 'assignments.id', '=', 'submissions.assignment_id')
+                ->whereIn('assignments.course_id', $courseIds)
+                ->groupBy('assignments.course_id')
+                ->selectRaw('assignments.course_id as course_id, COUNT(*) as total_submissions, SUM(CASE WHEN submissions.marks_obtained IS NOT NULL THEN 1 ELSE 0 END) as graded_submissions')
+                ->get()
+                ->mapWithKeys(function ($row) {
+                    $total = (int) $row->total_submissions;
+                    $graded = (int) $row->graded_submissions;
+                    return [
+                        (int) $row->course_id => [
+                            'total' => $total,
+                            'graded' => $graded,
+                            'percent' => $total > 0 ? (int) round(($graded / $total) * 100) : 0,
+                        ],
+                    ];
+                });
+        }
+
+        $courses = $courses->map(function ($course) use ($pendingByCourse, $upcomingByCourse, $gradingCoverageByCourse) {
+            $course->pending_reviews = $pendingByCourse->get($course->id, 0);
+            $course->upcoming_deadlines = $upcomingByCourse->get($course->id, 0);
+            $course->grading_coverage = $gradingCoverageByCourse->get($course->id, [
+                'total' => 0,
+                'graded' => 0,
+                'percent' => 0,
+            ]);
+
+            return $course;
+        });
+
+        $totalCourses = $courses->count();
+        $totalStudents = $courses->sum('enrollments_count');
+        $totalAssignments = $courses->sum('assignments_count');
+        $pendingReviews = $courses->sum('pending_reviews');
+        $upcomingDeadlines = $courses->sum('upcoming_deadlines');
+        $atRiskCourses = $courses->where('pending_reviews', '>=', 5)->count();
+        $avgGradingCoverage = $courses->avg(function ($course) {
+            return data_get($course->grading_coverage, 'percent', 0);
+        }) ?? 0;
+
+        return view('teacher.courses', compact(
+            'teacher',
+            'courses',
+            'totalCourses',
+            'totalStudents',
+            'totalAssignments',
+            'pendingReviews',
+            'upcomingDeadlines',
+            'atRiskCourses',
+            'avgGradingCoverage'
+        ));
     }
 
     public function assignments()

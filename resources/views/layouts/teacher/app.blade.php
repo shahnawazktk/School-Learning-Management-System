@@ -9,45 +9,83 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --teacher-sidebar-width: 270px; }
-        body { background-color: #f8fafc; color: #0f172a; }
+        :root {
+            --teacher-topbar-height: 64px;
+            --teacher-sidebar-width: 286px;
+            --teacher-sidebar-collapsed: 86px;
+            --teacher-bg: #f1f5f9;
+            --teacher-surface: #ffffff;
+            --teacher-border: #e2e8f0;
+            --teacher-text: #0f172a;
+            --teacher-muted: #64748b;
+            --teacher-primary: #2563eb;
+            --teacher-primary-soft: #dbeafe;
+            --teacher-sidebar-grad-start: #0f172a;
+            --teacher-sidebar-grad-end: #1e293b;
+        }
+        body {
+            background:
+                radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.09), transparent 28%),
+                radial-gradient(circle at 0% 100%, rgba(14, 165, 233, 0.08), transparent 24%),
+                var(--teacher-bg);
+            color: var(--teacher-text);
+        }
+        .teacher-shell {
+            min-height: calc(100vh - var(--teacher-topbar-height));
+        }
         .teacher-sidebar {
             width: var(--teacher-sidebar-width);
-            min-height: calc(100vh - 56px);
-            border-right: 1px solid #e5e7eb;
-            background: #fff;
-            transition: width .22s ease;
+            min-height: calc(100vh - var(--teacher-topbar-height));
+            border-right: 1px solid rgba(148, 163, 184, 0.22);
+            background: linear-gradient(180deg, var(--teacher-sidebar-grad-start), var(--teacher-sidebar-grad-end));
+            transition: width .2s ease;
         }
         .teacher-content {
-            min-height: calc(100vh - 56px);
+            min-height: calc(100vh - var(--teacher-topbar-height));
+            max-width: 1650px;
+            margin: 0 auto;
         }
         .teacher-layout-desktop .teacher-sidebar {
             position: sticky;
-            top: 56px;
-            max-height: calc(100vh - 56px);
+            top: var(--teacher-topbar-height);
+            max-height: calc(100vh - var(--teacher-topbar-height));
             overflow-y: auto;
         }
         .teacher-topbar {
-            background: rgba(255, 255, 255, .92);
+            min-height: var(--teacher-topbar-height);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--teacher-border);
         }
         .teacher-sidebar .nav-link {
-            border-radius: .5rem;
-            color: #374151;
+            border-radius: .65rem;
+            color: rgba(226, 232, 240, 0.88);
             font-weight: 500;
-            padding: .55rem .75rem;
+            padding: .62rem .8rem;
+            border: 1px solid transparent;
+            transition: all .17s ease;
         }
-        .teacher-sidebar .nav-link:hover { background: #f3f4f6; }
+        .teacher-sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            color: #93c5fd;
+        }
+        .teacher-sidebar .nav-link:hover {
+            background: rgba(148, 163, 184, 0.18);
+            color: #fff;
+            border-color: rgba(148, 163, 184, 0.3);
+        }
         .teacher-sidebar .nav-link.active {
-            background: #e0e7ff;
-            color: #1d4ed8;
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.34), rgba(56, 189, 248, 0.18));
+            color: #fff;
+            border-color: rgba(96, 165, 250, 0.35);
         }
         .teacher-menu-group-title {
             font-size: .72rem;
             text-transform: uppercase;
             letter-spacing: .05em;
             font-weight: 700;
-            color: #64748b;
+            color: #93c5fd;
             margin: .9rem 0 .35rem;
             padding: 0 .45rem;
         }
@@ -60,10 +98,11 @@
             margin-bottom: .2rem;
         }
         .teacher-layout-desktop .teacher-sidebar.is-collapsed {
-            width: 78px;
+            width: var(--teacher-sidebar-collapsed);
         }
         .teacher-layout-desktop .teacher-sidebar.is-collapsed .teacher-meta,
-        .teacher-layout-desktop .teacher-sidebar.is-collapsed .teacher-label {
+        .teacher-layout-desktop .teacher-sidebar.is-collapsed .teacher-label,
+        .teacher-layout-desktop .teacher-sidebar.is-collapsed .teacher-link-text {
             display: none !important;
         }
         .teacher-layout-desktop .teacher-sidebar.is-collapsed .nav-link {
@@ -80,17 +119,60 @@
             align-items: center;
             gap: .65rem;
             text-decoration: none;
-            color: #111827;
+            color: #0f172a;
             font-weight: 700;
         }
         .teacher-brand img { width: 34px; height: 34px; object-fit: contain; }
+        .teacher-quick-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: .6rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #334155;
+            border: 1px solid var(--teacher-border);
+            background: #fff;
+        }
+        .teacher-quick-btn:hover {
+            background: #f8fafc;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+        .teacher-sidebar-footer {
+            background: rgba(2, 6, 23, 0.2);
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        .teacher-mobile-sidebar .teacher-menu-group-title {
+            color: var(--teacher-muted);
+        }
+        .teacher-mobile-sidebar .nav-link {
+            color: #334155;
+            border-radius: .6rem;
+        }
+        .teacher-mobile-sidebar .nav-link:hover {
+            background: #f1f5f9;
+        }
+        .teacher-mobile-sidebar .nav-link.active {
+            color: var(--teacher-primary);
+            background: var(--teacher-primary-soft);
+        }
+        .teacher-sidebar .btn-outline-danger {
+            color: #fecaca;
+            border-color: rgba(239, 68, 68, 0.55);
+        }
+        .teacher-sidebar .btn-outline-danger:hover {
+            color: #fff;
+            background: rgba(239, 68, 68, 0.9);
+            border-color: transparent;
+        }
     </style>
 </head>
 <body>
     @include('layouts.teacher.header')
 
     <div class="container-fluid px-0">
-        <div class="d-flex teacher-layout-desktop">
+        <div class="d-flex teacher-layout-desktop teacher-shell">
             <aside class="teacher-sidebar d-none d-lg-block">
                 @include('layouts.teacher.sidebar', ['mobile' => false])
             </aside>

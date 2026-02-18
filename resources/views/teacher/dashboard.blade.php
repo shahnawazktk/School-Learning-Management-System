@@ -2,10 +2,67 @@
 @section('page_title', 'Dashboard')
 
 @section('content')
-<div class="container-fluid p-1 p-lg-2">
+<style>
+    .teacher-dashboard .teacher-section-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        overflow: hidden;
+    }
+    .teacher-dashboard .teacher-section-card .card-header {
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        padding-top: .9rem;
+        padding-bottom: .9rem;
+    }
+    .teacher-dashboard .teacher-section-card .table thead th {
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: #64748b;
+        border-bottom-color: #e2e8f0;
+        background: #f8fafc;
+    }
+    .teacher-dashboard .teacher-section-card .table td {
+        border-color: #edf2f7;
+    }
+    .teacher-dashboard .teacher-stat-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.03);
+    }
+    .teacher-dashboard .teacher-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .9rem;
+    }
+    .teacher-dashboard.is-compact .teacher-section-card .card-header {
+        padding-top: .6rem;
+        padding-bottom: .6rem;
+    }
+    .teacher-dashboard.is-compact .teacher-section-card .table > :not(caption) > * > * {
+        padding-top: .45rem;
+        padding-bottom: .45rem;
+        font-size: .9rem;
+    }
+    .teacher-dashboard.is-compact .teacher-section-card .list-group-item {
+        padding-top: .55rem !important;
+        padding-bottom: .55rem !important;
+    }
+    .teacher-dashboard.is-compact .teacher-stat-card .card-body {
+        padding-top: .75rem;
+        padding-bottom: .75rem;
+    }
+</style>
+
+<div class="container-fluid p-1 p-lg-2 teacher-dashboard">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm" style="background: linear-gradient(120deg, #0d6efd 0%, #0dcaf0 100%);">
+            <div class="card border-0 shadow-sm rounded-4" style="background: linear-gradient(120deg, #0b3a8f 0%, #2563eb 58%, #0ea5e9 100%);">
                 <div class="card-body text-white p-4 p-lg-5">
                     <div class="row align-items-center">
                         <div class="col-lg-7">
@@ -59,9 +116,15 @@
 
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
+            <div class="card teacher-section-card">
                 <div class="card-body">
                     <form method="GET" action="{{ route('teacher.dashboard') }}" class="row g-3 align-items-end">
+                        <div class="col-12 d-flex justify-content-end">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Density Toggle">
+                                <button type="button" id="densityComfortableBtn" class="btn btn-outline-secondary active">Comfortable</button>
+                                <button type="button" id="densityCompactBtn" class="btn btn-outline-secondary">Compact</button>
+                            </div>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold mb-1">Time Range</label>
                             <select name="period" class="form-select">
@@ -96,34 +159,46 @@
 
     <div class="row mb-4">
         <div class="col-md-3 col-6 mb-3 mb-md-0">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <small class="text-muted d-block mb-2">Active Courses</small>
-                    <h4 class="fw-bold mb-0">{{ $courses->count() }}</h4>
+            <div class="card teacher-stat-card h-100">
+                <div class="card-body d-flex justify-content-between align-items-start">
+                    <div>
+                        <small class="text-muted d-block mb-2">Active Courses</small>
+                        <h4 class="fw-bold mb-0">{{ $courses->count() }}</h4>
+                    </div>
+                    <span class="teacher-stat-icon bg-primary-subtle text-primary"><i class="fas fa-book-open"></i></span>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-6 mb-3 mb-md-0">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <small class="text-muted d-block mb-2">Enrolled Students</small>
-                    <h4 class="fw-bold mb-0">{{ $totalStudents }}</h4>
+            <div class="card teacher-stat-card h-100">
+                <div class="card-body d-flex justify-content-between align-items-start">
+                    <div>
+                        <small class="text-muted d-block mb-2">Enrolled Students</small>
+                        <h4 class="fw-bold mb-0">{{ $totalStudents }}</h4>
+                    </div>
+                    <span class="teacher-stat-icon bg-success-subtle text-success"><i class="fas fa-users"></i></span>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <small class="text-muted d-block mb-2">Pending Reviews</small>
-                    <h4 class="fw-bold mb-0">{{ $pendingSubmissions }}</h4>
+            <div class="card teacher-stat-card h-100">
+                <div class="card-body d-flex justify-content-between align-items-start">
+                    <div>
+                        <small class="text-muted d-block mb-2">Pending Reviews</small>
+                        <h4 class="fw-bold mb-0">{{ $pendingSubmissions }}</h4>
+                    </div>
+                    <span class="teacher-stat-icon bg-warning-subtle text-warning"><i class="fas fa-clipboard-check"></i></span>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <small class="text-muted d-block mb-2">Overdue Grading</small>
-                    <h4 class="fw-bold mb-0 text-danger">{{ $overdueGrading }}</h4>
+            <div class="card teacher-stat-card h-100">
+                <div class="card-body d-flex justify-content-between align-items-start">
+                    <div>
+                        <small class="text-muted d-block mb-2">Overdue Grading</small>
+                        <h4 class="fw-bold mb-0 text-danger">{{ $overdueGrading }}</h4>
+                    </div>
+                    <span class="teacher-stat-icon bg-danger-subtle text-danger"><i class="fas fa-triangle-exclamation"></i></span>
                 </div>
             </div>
         </div>
@@ -131,7 +206,7 @@
 
     <div class="row mb-4">
         <div class="col-lg-7 mb-4 mb-lg-0">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card teacher-section-card h-100">
                 <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-book-open me-2 text-primary"></i>My Courses</h5>
                     <a href="{{ route('teacher.courses') }}" class="btn btn-outline-primary btn-sm">View All</a>
@@ -171,7 +246,7 @@
         </div>
 
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card teacher-section-card h-100">
                 <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-clipboard-list me-2 text-success"></i>Recent Assignments</h5>
                     <a href="{{ route('teacher.assignments') }}" class="btn btn-outline-success btn-sm">Open</a>
@@ -206,7 +281,7 @@
 
     <div class="row mb-4">
         <div class="col-lg-7 mb-4 mb-lg-0">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card teacher-section-card h-100">
                 <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-check-double me-2 text-danger"></i>Grading Queue</h5>
                     <a href="{{ route('teacher.submissions') }}" class="btn btn-outline-danger btn-sm">Grade Center</a>
@@ -263,7 +338,7 @@
         </div>
 
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card teacher-section-card h-100">
                 <div class="card-header bg-white border-bottom">
                     <h5 class="mb-0"><i class="fas fa-calendar-days me-2 text-primary"></i>Academic Calendar (14 Days)</h5>
                 </div>
@@ -296,7 +371,7 @@
 
     <div class="row mb-2">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
+            <div class="card teacher-section-card">
                 <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-success"></i>Course Performance Snapshot</h5>
                     <a href="{{ route('teacher.courses') }}" class="btn btn-outline-success btn-sm">Manage Courses</a>
@@ -362,4 +437,38 @@
         </div>
     </div>
 </div>
+
+<script>
+    (() => {
+        const densityKey = 'teacher_dashboard_density';
+        const root = document.querySelector('.teacher-dashboard');
+        const comfortableBtn = document.getElementById('densityComfortableBtn');
+        const compactBtn = document.getElementById('densityCompactBtn');
+        if (!root || !comfortableBtn || !compactBtn) return;
+
+        const setDensity = (density) => {
+            const isCompact = density === 'compact';
+            root.classList.toggle('is-compact', isCompact);
+            comfortableBtn.classList.toggle('active', !isCompact);
+            compactBtn.classList.toggle('active', isCompact);
+            try {
+                localStorage.setItem(densityKey, density);
+            } catch (e) {
+                // Ignore localStorage restrictions.
+            }
+        };
+
+        comfortableBtn.addEventListener('click', () => setDensity('comfortable'));
+        compactBtn.addEventListener('click', () => setDensity('compact'));
+
+        let initialDensity = 'comfortable';
+        try {
+            initialDensity = localStorage.getItem(densityKey) || 'comfortable';
+        } catch (e) {
+            initialDensity = 'comfortable';
+        }
+
+        setDensity(initialDensity === 'compact' ? 'compact' : 'comfortable');
+    })();
+</script>
 @endsection
