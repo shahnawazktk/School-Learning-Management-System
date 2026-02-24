@@ -149,28 +149,29 @@ class AdminController extends Controller
     //     return view('admin.profile');
     // }
     public function profile()
-{
-    $school = School::first(); // assuming one school record
-    return view('admin.profile', compact('school'));
-}
+    {
+        $school = School::query()->first();
 
-public function updateProfile(Request $request)
-{
-    $request->validate([
-        'school_name' => 'required|string|max:255',
-        'school_address' => 'required|string|max:500',
-        'school_contact' => 'required|string|max:20',
-    ]);
+        return view('admin.profile', compact('school'));
+    }
 
-    $school = School::first();
-    $school->update([
-        'name' => $request->school_name,
-        'address' => $request->school_address,
-        'contact' => $request->school_contact,
-    ]);
+    public function updateProfile(Request $request)
+    {
+        $payload = $request->validate([
+            'school_name' => ['required', 'string', 'max:255'],
+            'school_address' => ['nullable', 'string', 'max:500'],
+            'school_contact' => ['nullable', 'string', 'max:20'],
+        ]);
 
-    return back()->with('success', 'School information updated successfully!');
-}
+        $school = School::query()->firstOrNew();
+        $school->fill([
+            'name' => $payload['school_name'],
+            'address' => $payload['school_address'] ?: null,
+            'contact' => $payload['school_contact'] ?: null,
+        ])->save();
+
+        return back()->with('success', 'School information updated successfully.');
+    }
 
 
     // All Users
