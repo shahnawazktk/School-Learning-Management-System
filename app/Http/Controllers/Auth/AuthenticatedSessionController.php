@@ -33,11 +33,22 @@ class AuthenticatedSessionController extends Controller
         // Authenticate user
         $request->authenticate();
 
+        $user = Auth::user();
+        if ($user instanceof User && $user->role !== 'admin' && !$user->is_approved) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withInput($request->only('email', 'remember'))
+                ->withErrors(['email' => 'Your account is pending admin approval.']);
+        }
+
         // Regenerate session to prevent session fixation
         $request->session()->regenerate();
 
         // Redirect based on user role
-        return $this->authenticated($request, Auth::user());
+        return $this->authenticated($request, $user);
     }
 
     /**

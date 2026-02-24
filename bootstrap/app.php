@@ -16,6 +16,7 @@ $middleware->alias([
     'auth' => \App\Http\Middleware\Authenticate::class,
     'role' => \App\Http\Middleware\RoleMiddleware::class,
     'is_admin' => \App\Http\Middleware\IsAdmin::class,
+    'approved' => \App\Http\Middleware\EnsureUserIsApproved::class,
 
 ]);
     })

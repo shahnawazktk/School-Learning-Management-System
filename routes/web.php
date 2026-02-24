@@ -39,6 +39,12 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
         ->name('admin.users');
     Route::post('/users', [AdminUserController::class, 'store'])
         ->name('admin.users.store');
+    Route::patch('/users/{user}/approve', [AdminUserController::class, 'approve'])
+        ->name('admin.users.approve');
+    Route::patch('/users/{user}/revoke', [AdminUserController::class, 'revoke'])
+        ->name('admin.users.revoke');
+    Route::patch('/users/bulk-approval', [AdminUserController::class, 'bulkApproval'])
+        ->name('admin.users.bulk-approval');
 
     Route::get('/settings', [AdminController::class, 'settings'])
         ->name('admin.settings');
@@ -63,7 +69,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Admin dashboard route is handled in the dedicated admin route group above.
 });
 
-Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
+Route::middleware(['auth', 'approved', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
     Route::get('/profile', [TeacherController::class, 'profile'])->name('profile');
     Route::put('/profile', [TeacherController::class, 'updateProfile'])->name('profile.update');
@@ -77,7 +83,7 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
     Route::post('/submissions/{submission}/grade', [TeacherController::class, 'gradeSubmission'])->name('submissions.grade');
 });
 
-Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'approved', 'role:student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
     Route::get('/admission-request', [StudentController::class, 'admissionRequest'])->name('admission-request');
     Route::get('/new-admission', [StudentController::class, 'newAdmission'])->name('new-admission');
@@ -114,7 +120,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::get('/resources/{resource}/stream', [StudentController::class, 'streamResource'])->name('resources.stream');
 });
 
-Route::middleware(['auth', 'role:parent'])->prefix('parent')->name('parent.')->group(function () {
+Route::middleware(['auth', 'approved', 'role:parent'])->prefix('parent')->name('parent.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\ParentController::class, 'dashboard'])->name('dashboard');
     Route::get('/children', [App\Http\Controllers\ParentController::class, 'children'])->name('children');
     Route::get('/children/{student}', [App\Http\Controllers\ParentController::class, 'childDetails'])->name('child.details');
@@ -129,7 +135,7 @@ Route::middleware(['auth', 'role:parent'])->prefix('parent')->name('parent.')->g
 });
 
 // Universal dashboard route that redirects based on user role
-Route::middleware('auth')->get('/dashboard', function () {
+Route::middleware(['auth', 'approved'])->get('/dashboard', function () {
     $user = Auth::user();
 
     switch ($user->role) {
