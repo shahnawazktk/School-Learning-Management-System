@@ -14,6 +14,7 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Submission;
 use App\Models\Teacher;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -123,6 +124,8 @@ class AdminController extends Controller
             ->take(8)
             ->values();
 
+        $recentUsers = User::latest()->take(5)->get();
+
         return view('admin.dashboard', compact(
             'teacherCount',
             'studentCount',
@@ -139,7 +142,8 @@ class AdminController extends Controller
             'newSubjectsThisMonth',
             'monthlyAttendanceLabels',
             'monthlyAttendanceData',
-            'recentActivity'
+            'recentActivity',
+            'recentUsers'
         ));
     }
 

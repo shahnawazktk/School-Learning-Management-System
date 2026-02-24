@@ -83,10 +83,12 @@ class UserController extends Controller
         ]);
 
         $user = DB::transaction(function () use ($validated) {
+            $plainPassword = $validated['password'];
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
+                'password' => Hash::make($plainPassword),
+                'temporary_password' => $plainPassword,
                 'role' => $validated['role'],
                 'is_approved' => $validated['role'] === 'admin',
             ]);

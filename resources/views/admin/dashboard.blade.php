@@ -224,6 +224,72 @@
         </div>
     </div>
 
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card section-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-users me-2 text-success"></i>Recent Users</h5>
+                    <a href="{{ route('admin.users') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Password</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recentUsers as $user)
+                                    @php
+                                        $badge = match($user->role) {
+                                            'admin' => 'text-bg-danger',
+                                            'teacher' => 'text-bg-primary',
+                                            'student' => 'text-bg-success',
+                                            'parent' => 'text-bg-warning',
+                                            default => 'text-bg-secondary'
+                                        };
+                                    @endphp
+                                    <tr>
+                                        <td class="fw-semibold">{{ $user->name }}</td>
+                                        <td>{{ $user->email }}</td>
+                                        <td>
+                                            @if($user->temporary_password)
+                                                <span class="badge text-bg-info">{{ $user->temporary_password }}</span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td><span class="badge {{ $badge }}">{{ ucfirst($user->role) }}</span></td>
+                                        <td>
+                                            @if($user->role === 'admin')
+                                                <span class="badge text-bg-dark">Active</span>
+                                            @elseif($user->is_approved)
+                                                <span class="badge text-bg-success">Approved</span>
+                                            @else
+                                                <span class="badge text-bg-warning">Pending</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $user->created_at->format('M d, Y') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">No users found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3" id="attendance-overview">
         <div class="col-xl-8">
             <div class="card section-card">

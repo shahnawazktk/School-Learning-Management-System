@@ -175,6 +175,7 @@
                                     </th>
                                     <th>Name</th>
                                     <th>Email</th>
+                                    <th>Password</th>
                                     <th>Role</th>
                                     <th>Approval</th>
                                     <th>Created</th>
@@ -205,6 +206,13 @@
                                         </td>
                                         <td class="fw-semibold">{{ $user->name }}</td>
                                         <td>{{ $user->email }}</td>
+                                        <td>
+                                            @if($user->temporary_password)
+                                                <span class="badge text-bg-info">{{ $user->temporary_password }}</span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                         <td><span class="badge {{ $badge }}">{{ ucfirst($user->role) }}</span></td>
                                         <td>
                                             @if($user->role === 'admin')
@@ -242,7 +250,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted">No users found.</td>
+                                        <td colspan="8" class="text-center text-muted">No users found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
